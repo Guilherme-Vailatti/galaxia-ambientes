@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#050713">
+  <title>Senior Cloud - Ambientes</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+    :root {
+      --bg: #050713;
+      --panel: rgba(10, 14, 30, 0.72);
+      --panel-strong: rgba(13, 18, 38, 0.94);
+      --line: rgba(255, 255, 255, 0.1);
+      --muted: #8d96b5;
+      --text: #f5f7ff;
+      --lime: #c6ff53;
+      --cyan: #54d9ff;
+      --violet: #a874ff;
+      --pink: #ff72bc;
+      --font-body: "DM Sans", "Segoe UI", sans-serif;
+      --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      color-scheme: dark;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--text);
+      font-family: var(--font-body);
+      background: var(--bg);
+    }
+
+    button,
+    input,
+    a {
+      font: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .starfield,
+    .aurora,
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .starfield {
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .aurora {
+      z-index: 1;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(84, 217, 255, 0.08), transparent 28%),
+        radial-gradient(circle at 18% 80%, rgba(168, 116, 255, 0.1), transparent 30%),
+        radial-gradient(circle at 88% 16%, rgba(198, 255, 83, 0.06), transparent 26%);
+    }
+
+    .aurora::before,
+    .aurora::after {
+      content: "";
+      position: absolute;
+      width: 55vw;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.11;
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+
+    .aurora::before {
+      top: -34%;
+      left: -12%;
+      background: var(--violet);
+    }
+
+    .aurora::after {
+      right: -14%;
+      bottom: -42%;
+      background: var(--cyan);
+      animation-delay: -7s;
+    }
+
+    .noise {
+      z-index: 2;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+    }
+
+    .app {
+      position: relative;
+      z-index: 3;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 22px 28px 20px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      min-width: max-content;
+    }
+
+    .brand img {
+      width: 104px;
+      height: auto;
+      display: block;
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--line);
+    }
+
+    .brand-product {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .search-wrap {
+      position: relative;
+      width: min(470px, 46vw);
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 18px;
+      width: 18px;
+      height: 18px;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search {
+      width: 100%;
+      height: 48px;
+      padding: 0 118px 0 48px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      outline: none;
+      color: var(--text);
+      background: rgba(10, 14, 30, 0.62);
+      backdrop-filter: blur(18px);
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .search::placeholder {
+      color: #737d9d;
+    }
+
+    .search:focus {
+      border-color: rgba(198, 255, 83, 0.42);
+      background: rgba(13, 18, 38, 0.88);
+      box-shadow: 0 0 0 4px rgba(198, 255, 83, 0.07), 0 14px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .search-shortcut {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #7983a3;
+      font-size: 0.7rem;
+      background: rgba(255, 255, 255, 0.035);
+      pointer-events: none;
+    }
+
+    .search-submit {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      height: 36px;
+      padding: 0 15px;
+      border: 1px solid rgba(198, 255, 83, 0.34);
+      border-radius: 11px;
+      color: #10150a;
+      background: var(--lime);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .search-submit:hover { filter: brightness(1.07); }
+    .search-submit:active { transform: scale(0.97); }
+    .search-submit:disabled { opacity: 0.55; cursor: wait; }
+
+    .stage {
+      position: relative;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      transition: padding-right 320ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .intro {
+      position: absolute;
+      top: 6%;
+      left: 0;
+      width: min(350px, 27vw);
+      z-index: 15;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 12px;
+      color: var(--lime);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    h1 {
+      max-width: 330px;
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 3vw, 3.45rem);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    h1 span {
+      color: transparent;
+      background: linear-gradient(100deg, var(--text), #aab5d3);
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .intro p {
+      max-width: 300px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .system {
+      position: relative;
+      width: min(94vh, 940px);
+      aspect-ratio: 1;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transform-style: preserve-3d;
+      transform: translate3d(var(--pan-x, 0), var(--pan-y, 0), 0) scale(var(--zoom, 1));
+      transform-origin: center;
+      transition: opacity 240ms ease;
+      will-change: transform;
+    }
+
+    .system.is-dragging {
+      cursor: grabbing;
+    }
+
+    .system::before {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(84, 217, 255, 0.08), transparent 65%);
+      filter: blur(18px);
+      animation: breathe 5s ease-in-out infinite;
+    }
+
+    .orbit-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border: 1px solid rgba(138, 160, 207, 0.14);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) rotateX(66deg) rotateZ(-8deg);
+      box-shadow: inset 0 0 25px rgba(84, 217, 255, 0.025), 0 0 18px rgba(84, 217, 255, 0.025);
+      pointer-events: none;
+    }
+
+    .orbit-ring::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      border-top: 1px solid rgba(198, 255, 83, 0.22);
+      border-right: 1px solid transparent;
+      filter: drop-shadow(0 0 5px rgba(198, 255, 83, 0.2));
+    }
+
+    .ring-1 { width: 58%; height: 58%; }
+    .ring-2 { width: 90%; height: 90%; }
+    .ring-3 { width: 122%; height: 122%; }
+
+    .core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(198, 255, 83, 0.28);
+      border-radius: 32%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background:
+        linear-gradient(135deg, rgba(198, 255, 83, 0.16), rgba(84, 217, 255, 0.06)),
+        rgba(7, 11, 24, 0.92);
+      box-shadow:
+        0 0 0 12px rgba(198, 255, 83, 0.025),
+        0 0 70px rgba(198, 255, 83, 0.12),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
+      animation: coreFloat 5s ease-in-out infinite;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .core::before,
+    .core::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(198, 255, 83, 0.13);
+      border-radius: 34%;
+      inset: -10px;
+      animation: coreSpin 18s linear infinite;
+    }
+
+    .core::after {
+      inset: -19px;
+      border-color: rgba(84, 217, 255, 0.08);
+      animation-direction: reverse;
+      animation-duration: 25s;
+    }
+
+    .core-inner {
+      width: 70%;
+      display: grid;
+      place-items: center;
+      transform: rotate(-45deg);
+    }
+
+    .core-logo {
+      display: block;
+      width: 100%;
+      height: auto;
+      filter: drop-shadow(0 0 14px rgba(198, 255, 83, 0.22));
+      pointer-events: none;
+    }
+
+    .deep-satellite {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 35;
+      width: 92px;
+      height: 58px;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      background: transparent;
+      opacity: 0.7;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) translate(var(--satellite-x, 0), var(--satellite-y, 0)) rotate(var(--satellite-rotation, -12deg)) scale(0.64);
+    }
+
+    .deep-satellite:hover,
+    .deep-satellite:focus-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) translate(var(--satellite-x, 0), var(--satellite-y, 0)) rotate(var(--satellite-rotation, -12deg)) scale(0.82);
+    }
+
+    .satellite-body {
+      position: absolute;
+      top: 17px;
+      left: 35px;
+      width: 26px;
+      height: 22px;
+      border: 1px solid rgba(220, 228, 240, 0.48);
+      border-radius: 2px;
+      background: linear-gradient(145deg, #aab3bf, #596474 52%, #252c37);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.34);
+    }
+
+    .satellite-body::before {
+      content: "";
+      position: absolute;
+      left: 9px;
+      bottom: 100%;
+      width: 5px;
+      height: 12px;
+      background: #7e8998;
+    }
+
+    .satellite-dish {
+      position: absolute;
+      left: 35px;
+      top: 4px;
+      width: 26px;
+      height: 13px;
+      border: 1px solid #aeb8c5;
+      border-top: 0;
+      border-radius: 0 0 50% 50%;
+      transform: rotate(7deg);
+      filter: none;
+    }
+
+    .satellite-panel {
+      position: absolute;
+      top: 20px;
+      width: 31px;
+      height: 16px;
+      border: 1px solid rgba(151, 166, 187, 0.52);
+      background:
+        linear-gradient(90deg, transparent 47%, rgba(176, 191, 211, 0.2) 48% 52%, transparent 53%),
+        linear-gradient(0deg, transparent 47%, rgba(176, 191, 211, 0.16) 48% 52%, transparent 53%),
+        linear-gradient(145deg, #24354b, #101722);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.28);
+    }
+
+    .satellite-panel.left { left: 1px; }
+    .satellite-panel.right { right: 1px; }
+
+    .satellite-tooltip {
+      position: absolute;
+      left: 50%;
+      bottom: -42px;
+      padding: 8px 11px;
+      border: 1px solid rgba(84, 217, 255, 0.38);
+      border-radius: 9px;
+      color: #f5f8ff;
+      background: rgba(5, 9, 22, 0.98);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48), 0 0 16px rgba(84, 217, 255, 0.12);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translate(-50%, -4px) rotate(var(--satellite-counter-rotation, 12deg)) scale(1.65);
+      transform-origin: top center;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .deep-satellite:hover .satellite-tooltip,
+    .deep-satellite:focus-visible .satellite-tooltip {
+      opacity: 1;
+      transform: translate(-50%, 0) rotate(var(--satellite-counter-rotation, 12deg)) scale(1.65);
+    }
+
+    .nodes {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .node {
+      --node-color: #73809f;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 96px;
+      min-height: 58px;
+      padding: 9px 8px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      text-decoration: none;
+      background: transparent;
+      cursor: pointer;
+      pointer-events: auto;
+      will-change: transform, opacity;
+      transition: filter 180ms ease, opacity 220ms ease;
+    }
+
+    .node-dot {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.82);
+      border-radius: 50%;
+      background: var(--node-color);
+      box-shadow:
+        0 0 0 5px color-mix(in srgb, var(--node-color) 12%, transparent),
+        0 0 18px color-mix(in srgb, var(--node-color) 62%, transparent);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .node-dot::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border: 1px solid color-mix(in srgb, var(--node-color) 25%, transparent);
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .node-label {
+      max-width: 112px;
+      margin-top: 8px;
+      overflow: hidden;
+      color: rgba(241, 244, 255, 0.78);
+      font-family: var(--font-display);
+      font-size: 0.76rem;
+      font-weight: 600;
+      line-height: 1.1;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-shadow: 0 2px 10px #050713;
+      transition: color 180ms ease, transform 180ms ease;
+    }
+
+    .node-incident {
+      margin-top: 5px;
+      padding: 3px 6px;
+      border: 1px solid color-mix(in srgb, var(--incident-color, #ffc857) 48%, transparent);
+      border-radius: 999px;
+      color: var(--incident-color, #ffc857);
+      background: color-mix(in srgb, var(--incident-color, #ffc857) 11%, rgba(5, 7, 19, 0.88));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--incident-color, #ffc857) 16%, transparent);
+      font-size: 0.55rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .node-incident[hidden] { display: none; }
+
+    .node:hover,
+    .node:focus-visible,
+    .node.is-match {
+      z-index: 50 !important;
+      filter: brightness(1.25);
+    }
+
+    .node:hover .node-dot,
+    .node:focus-visible .node-dot,
+    .node.is-match .node-dot {
+      transform: scale(1.45);
+      box-shadow:
+        0 0 0 7px color-mix(in srgb, var(--node-color) 14%, transparent),
+        0 0 28px color-mix(in srgb, var(--node-color) 82%, transparent);
+    }
+
+    .node.is-match .node-dot::after {
+      animation: ping 1.15s ease-out infinite;
+    }
+
+    .node:hover .node-label,
+    .node:focus-visible .node-label,
+    .node.is-match .node-label {
+      color: #fff;
+      transform: translateY(2px) scale(1.08);
+    }
+
+    .node.is-hidden {
+      opacity: 0.08 !important;
+      filter: grayscale(1);
+      pointer-events: none;
+    }
+
+    .side-panel {
+      position: absolute;
+      top: 15%;
+      right: 0;
+      width: 225px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .panel-heading span:first-child {
+      color: var(--muted);
+      font-size: 0.67rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .status-live {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--lime);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-live::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 9px currentColor;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .status-live[data-state="loading"] {
+      color: #ffc857;
+    }
+
+    .status-live[data-state="error"] {
+      color: #ff647c;
+    }
+
+    .metric {
+      display: flex;
+      align-items: flex-end;
+      gap: 9px;
+      margin-bottom: 13px;
+    }
+
+    .metric strong {
+      font-family: var(--font-display);
+      font-size: 2.3rem;
+      line-height: 1;
+      letter-spacing: -0.06em;
+    }
+
+    .metric span {
+      padding-bottom: 3px;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 9px;
+      color: #aeb6cf;
+      font-size: 0.72rem;
+    }
+
+    .legend-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .legend-count {
+      color: var(--text);
+      font-family: var(--font-display);
+      font-weight: 700;
+    }
+
+    .legend-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--legend-color);
+      box-shadow: 0 0 8px var(--legend-color);
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      color: #697391;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      z-index: 20;
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control {
+      height: 35px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: #8f99b7;
+      background: rgba(10, 14, 30, 0.55);
+      cursor: pointer;
+      transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .control:hover,
+    .control:focus-visible {
+      outline: none;
+      color: var(--text);
+      border-color: rgba(198, 255, 83, 0.28);
+      background: rgba(20, 27, 52, 0.75);
+    }
+
+    .control svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .search-result {
+      position: absolute;
+      top: calc(100% + 9px);
+      right: 0;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel-strong);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(22px);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-5px);
+      transition: 160ms ease;
+      z-index: 80;
+    }
+
+    .search-result.is-visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .result-row {
+      width: 100%;
+      padding: 10px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 0;
+      border-radius: 10px;
+      color: #dce2f5;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .result-row:hover,
+    .result-row:focus-visible {
+      outline: none;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .result-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .result-name::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--result-color);
+      box-shadow: 0 0 8px var(--result-color);
+    }
+
+    .result-action {
+      color: #737d9d;
+      font-size: 0.67rem;
+    }
+
+    .empty-result {
+      padding: 14px 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .modal-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .modal-layer.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      position: absolute;
+      top: 88px;
+      right: 24px;
+      bottom: 76px;
+      width: min(440px, calc(100vw - 48px));
+      padding: 28px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      pointer-events: auto;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 0 0, color-mix(in srgb, var(--modal-color) 16%, transparent), transparent 40%),
+        var(--panel-strong);
+      box-shadow: 0 32px 100px rgba(0, 0, 0, 0.55), 0 0 60px color-mix(in srgb, var(--modal-color) 8%, transparent);
+      backdrop-filter: blur(24px);
+      transform: translateX(calc(100% + 48px));
+      transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .modal-layer.is-open .modal {
+      transform: translateX(0);
+    }
+
+    body.modal-open .side-panel {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(18px);
+    }
+
+    body.modal-open .stage {
+      padding-right: min(32vw, 460px);
+    }
+
+    body.modal-open .intro {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .modal::after {
+      content: "";
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 180px;
+      height: 180px;
+      border: 1px solid color-mix(in srgb, var(--modal-color) 22%, transparent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 20px color-mix(in srgb, var(--modal-color) 3%, transparent);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: #a8b0c8;
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .modal-close:hover,
+    .modal-close:focus-visible {
+      outline: none;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-orbit {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 22px;
+      border: 1px solid color-mix(in srgb, var(--modal-color) 35%, transparent);
+      border-radius: 50%;
+    }
+
+    .modal-orbit::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: var(--modal-color);
+      box-shadow: 0 0 28px var(--modal-color);
+    }
+
+    .modal-kicker {
+      color: var(--modal-color);
+      font-size: 0.67rem;
+      font-weight: 700;
+      letter-spacing: 0.17em;
+      text-transform: uppercase;
+    }
+
+    .modal-status {
+      width: max-content;
+      margin-top: 14px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid color-mix(in srgb, var(--modal-color) 32%, transparent);
+      border-radius: 999px;
+      color: var(--modal-color);
+      font-size: 0.67rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: color-mix(in srgb, var(--modal-color) 8%, transparent);
+    }
+
+    .modal-status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 9px currentColor;
+    }
+
+    .modal h2 {
+      margin: 5px 0 10px;
+      font-family: var(--font-display);
+      font-size: 2.1rem;
+      letter-spacing: -0.05em;
+    }
+
+    .modal p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .segment-status-panel {
+      position: relative;
+      z-index: 2;
+      margin-top: 18px;
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+    }
+
+    .segment-status-panel[hidden] { display: none; }
+
+    .segment-status-heading {
+      margin-bottom: 10px;
+      color: #cbd2e6;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .segment-status-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .segment-card {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .segment-card-header,
+    .segment-scope-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .segment-card-header {
+      margin-bottom: 8px;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .segment-overall,
+    .segment-scope-status {
+      color: var(--segment-color);
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .segment-scope-row {
+      padding: 7px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.055);
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+
+    .segment-scope-description {
+      margin: -2px 0 7px !important;
+      padding-left: 0;
+      color: #b9c2d9 !important;
+      font-size: 0.7rem !important;
+      line-height: 1.4 !important;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .client-search {
+      position: relative;
+      z-index: 2;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .client-search[hidden] { display: none; }
+
+    .client-search label {
+      display: block;
+      margin-bottom: 9px;
+      color: #cbd2e6;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .client-search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+    }
+
+    .client-id {
+      min-width: 0;
+      height: 46px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      outline: none;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.045);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .client-id:focus {
+      border-color: color-mix(in srgb, var(--modal-color) 52%, transparent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--modal-color) 8%, transparent);
+    }
+
+    .client-search-button {
+      height: 46px;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid rgba(198, 255, 83, 0.34);
+      border-radius: 13px;
+      color: #071014;
+      font-weight: 700;
+      text-decoration: none;
+      background: var(--lime);
+      box-shadow: 0 10px 28px rgba(198, 255, 83, 0.14);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      cursor: pointer;
+    }
+
+    .client-search-button:hover,
+    .client-search-button:focus-visible {
+      outline: none;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(198, 255, 83, 0.2);
+    }
+
+    .client-search-button:disabled {
+      opacity: 0.58;
+      transform: none;
+      cursor: wait;
+    }
+
+    .client-results {
+      max-height: 285px;
+      margin-top: 14px;
+      overflow: auto;
+      display: grid;
+      gap: 9px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    }
+
+    .client-message {
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .access-card {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .access-card.is-current {
+      border-color: color-mix(in srgb, var(--modal-color) 35%, transparent);
+      background: color-mix(in srgb, var(--modal-color) 6%, rgba(255, 255, 255, 0.035));
+    }
+
+    .access-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .access-card-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .access-card-badge {
+      padding: 4px 7px;
+      border-radius: 999px;
+      color: var(--badge-color, var(--modal-color));
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: color-mix(in srgb, var(--badge-color, var(--modal-color)) 9%, transparent);
+    }
+
+    .access-card-status-description {
+      margin: -2px 0 11px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    .client-lookup-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .client-lookup-actions[hidden] { display: none; }
+
+    .clear-client-lookup {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .clear-client-lookup:hover,
+    .clear-client-lookup:focus-visible {
+      outline: none;
+      color: var(--text);
+      border-color: rgba(198, 255, 83, 0.28);
+    }
+
+    .access-links {
+      display: grid;
+      gap: 7px;
+    }
+
+    .access-link {
+      min-width: 0;
+      padding: 9px 10px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      color: #dce3f5;
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.13);
+      transition: border-color 180ms ease, background 180ms ease;
+    }
+
+    .access-link:hover,
+    .access-link:focus-visible {
+      outline: none;
+      border-color: color-mix(in srgb, var(--modal-color) 30%, transparent);
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .access-link-type {
+      color: var(--muted);
+      font-size: 0.67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .access-link-url {
+      overflow: hidden;
+      font-size: 0.72rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .access-link-arrow {
+      color: var(--modal-color);
+    }
+
+    .burst {
+      position: fixed;
+      z-index: 90;
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--burst-color);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: burst 650ms ease-out forwards;
+    }
+
+    @keyframes drift {
+      to { transform: translate(13vw, 8vh) scale(1.15); }
+    }
+
+    @keyframes breathe {
+      50% { transform: scale(1.14); opacity: 0.6; }
+    }
+
+    @keyframes coreFloat {
+      0%, 100% { transform: translate(-50%, -50%) rotate(45deg) translateY(0); }
+      50% { transform: translate(-50%, -50%) rotate(45deg) translateY(-6px); }
+    }
+
+    @keyframes coreSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes ping {
+      70%, 100% { opacity: 0; transform: scale(2.4); }
+    }
+
+    @keyframes pulse {
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    @keyframes burst {
+      0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(8); }
+    }
+
+    @media (max-width: 980px) {
+      .app { padding: 18px 20px; }
+      h1 { font-size: 2.1rem; max-width: 240px; }
+      .side-panel { top: 5%; width: 190px; }
+      .system { width: min(90vh, 880px); }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100vh;
+        height: auto;
+        grid-template-rows: auto auto auto;
+        padding: 16px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand img { width: 92px; }
+      .search-wrap { width: 100%; }
+      .stage { min-height: 700px; }
+
+      .system {
+        width: min(138vw, 760px);
+      }
+
+      .node {
+        width: 80px;
+      }
+
+      .node-label {
+        font-size: 0.66rem;
+      }
+
+      .side-panel {
+        top: auto;
+        right: auto;
+        bottom: 5px;
+        left: 0;
+        width: 100%;
+        padding: 14px 16px;
+      }
+
+      .panel-heading,
+      .metric {
+        margin-bottom: 8px;
+      }
+
+      .metric strong { font-size: 1.8rem; }
+      .legend { grid-template-columns: repeat(3, 1fr); }
+      .legend-item { font-size: 0.63rem; }
+      .footer > span { display: none; }
+      .footer { justify-content: center; padding-top: 15px; }
+      .search-shortcut { display: none; }
+
+      .modal-layer {
+        display: flex;
+        align-items: flex-end;
+        padding: 8px;
+      }
+
+      .modal {
+        position: relative;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        max-height: min(62vh, 620px);
+        padding: 22px;
+        border-radius: 22px;
+        transform: translateY(calc(100% + 20px));
+      }
+
+      .modal-layer.is-open .modal {
+        transform: translateY(0);
+      }
+
+      body.modal-open .stage { padding-right: 0; }
+    }
+
+    @media (max-width: 430px) {
+      .stage { min-height: 640px; }
+      .system { width: 152vw; }
+      .core { width: 84px; }
+      .legend-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .control span { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="starfield" id="starfield" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="images/logo-senior.png" alt="Senior">
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-product">Ambientes Cloud</span>
+      </div>
+
+      <form class="search-wrap" id="clientLookupForm">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.4-3.4"></path>
+        </svg>
+        <input class="search" id="search" type="search" inputmode="numeric" placeholder="Insira seu ID" autocomplete="off" aria-label="Insira seu ID de cliente">
+        <button class="search-submit" id="clientLookupButton" type="submit">Localizar</button>
+        <div class="search-result" id="searchResult" role="listbox" aria-label="Resultados da busca"></div>
+      </form>
+    </header>
+
+    <section class="stage" aria-label="Mapa orbital dos ambientes cloud">
+      <div class="system" id="system">
+        <div class="orbit-ring ring-1" aria-hidden="true"></div>
+        <div class="orbit-ring ring-2" aria-hidden="true"></div>
+        <div class="orbit-ring ring-3" aria-hidden="true"></div>
+
+        <div class="nodes" id="nodes"></div>
+
+        <button class="deep-satellite" id="deepSatellite" type="button" aria-label="Monitoramento cloud">
+          <span class="satellite-panel left" aria-hidden="true"></span>
+          <span class="satellite-body" aria-hidden="true"></span>
+          <span class="satellite-dish" aria-hidden="true"></span>
+          <span class="satellite-panel right" aria-hidden="true"></span>
+          <span class="satellite-tooltip">Monitoramento cloud</span>
+        </button>
+
+        <div class="core" aria-label="Núcleo Senior Cloud">
+          <div class="core-inner">
+            <img class="core-logo" src="images/logo-senior.png" alt="Senior">
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="panel-heading">
+          <span>Visão geral</span>
+          <span class="status-live">online</span>
+        </div>
+        <div class="metric">
+          <strong id="environmentCount">17</strong>
+          <span>ambientes<br>mapeados</span>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-label"><span class="legend-dot" style="--legend-color: #72f1a6"></span><span>Operacional</span></span>
+            <strong class="legend-count" id="operationalCount">0</strong>
+          </div>
+          <div class="legend-item">
+            <span class="legend-label"><span class="legend-dot" style="--legend-color: #ffc857"></span><span>Instabilidade</span></span>
+            <strong class="legend-count" id="instabilityCount">0</strong>
+          </div>
+          <div class="legend-item">
+            <span class="legend-label"><span class="legend-dot" style="--legend-color: #ff647c"></span><span>Indisponível</span></span>
+            <strong class="legend-count" id="unavailableCount">0</strong>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>Cloud Operations Center</span>
+      <div class="footer-actions">
+        <button class="control" id="motionControl" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <span>Pausar órbitas</span>
+        </button>
+        <button class="control" id="centerControl" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          <span>Redefinir visão</span>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="modal-layer" id="modalLayer" aria-hidden="true">
+    <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Fechar">✕</button>
+      <div class="modal-orbit" aria-hidden="true"></div>
+      <span class="modal-kicker" id="modalKicker">Ambiente cloud</span>
+      <h2 id="modalTitle">Antares</h2>
+      <div class="modal-status" id="modalStatus">Consultando status</div>
+      <p id="modalDescription">Portal de acesso ao ambiente Antares.</p>
+      <section class="segment-status-panel" id="modalSegmentStatus" hidden>
+        <h3 class="segment-status-heading">Status por segmento</h3>
+        <div class="segment-status-list" id="segmentStatusList"></div>
+      </section>
+      <form class="client-search" id="clientSearchForm">
+        <label for="clientId">Consulte as URLs pelo ID do cliente</label>
+        <div class="client-search-row">
+          <input class="client-id" id="clientId" name="clientId" type="text" inputmode="numeric" autocomplete="off" placeholder="Digite o ID do cliente" required>
+          <button class="client-search-button" id="clientSearchButton" type="submit">Buscar acessos</button>
+        </div>
+      </form>
+      <div class="client-results" id="clientResults" aria-live="polite"></div>
+      <div class="client-lookup-actions" id="clientLookupActions" hidden>
+        <button class="clear-client-lookup" id="clearClientLookup" type="button">Limpar consulta</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /*
+      Substitua o valor de "url" pelo endereço real de cada ambiente.
+      Enquanto a URL for "#", o botão mostrará "URL não configurada".
+    */
+    const environments = [
+      { name: "Antares", orbit: 0, url: "#", description: "Portal de acesso ao ambiente Antares." },
+      { name: "Sirius", orbit: 0, url: "#", description: "Portal de acesso ao ambiente Sirius." },
+      { name: "Vega", orbit: 0, url: "#", description: "Portal principal do ambiente Vega." },
+      { name: "Vega TMS", orbit: 0, url: "#", description: "Acesso aos serviços TMS do ecossistema Vega." },
+      { name: "Vega WMS", orbit: 0, url: "#", description: "Acesso aos serviços WMS do ecossistema Vega." },
+      { name: "Aludra", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Aludra." },
+      { name: "Bellatrix", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Bellatrix." },
+      { name: "Orion", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Orion." },
+      { name: "Gamma", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Gamma." },
+      { name: "Navi", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Navi." },
+      { name: "Atlas", orbit: 1, url: "#", description: "Portal de acesso ao ambiente Atlas." },
+      { name: "Aldebaran", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Aldebaran." },
+      { name: "Tauri", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Tauri." },
+      { name: "Electra", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Electra." },
+      { name: "Canopus", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Canopus." },
+      { name: "Atria", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Atria." },
+      { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
+    ];
+
+    const STATUS_API = "https://portal.seniorcloud.com.br/api/cadastros/status-ambiente/external";
+    const statusConfig = {
+      operacional: { label: "Operacional", color: "#72f1a6", severity: 1 },
+      instabilidade: { label: "Instabilidade", color: "#ffc857", severity: 2 },
+      indisponibilidade: { label: "Indisponível", color: "#ff647c", severity: 3 },
+      desconhecido: { label: "Sem dados", color: "#73809f", severity: 0 }
+    };
+    const orbitRadii = [0.29, 0.45, 0.61];
+    const orbitSpeeds = [0.000065, -0.000045, 0.000032];
+    const orbitTilt = [0.64, 0.58, 0.53];
+    const canvas = document.getElementById("starfield");
+    const context = canvas.getContext("2d");
+    const system = document.getElementById("system");
+    const nodesContainer = document.getElementById("nodes");
+    const search = document.getElementById("search");
+    const searchResult = document.getElementById("searchResult");
+    const clientLookupForm = document.getElementById("clientLookupForm");
+    const clientLookupButton = document.getElementById("clientLookupButton");
+    const motionControl = document.getElementById("motionControl");
+    const centerControl = document.getElementById("centerControl");
+    const deepSatellite = document.getElementById("deepSatellite");
+    const modalLayer = document.getElementById("modalLayer");
+    const modal = document.getElementById("modal");
+    const modalKicker = document.getElementById("modalKicker");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalDescription = document.getElementById("modalDescription");
+    const modalStatus = document.getElementById("modalStatus");
+    const modalSegmentStatus = document.getElementById("modalSegmentStatus");
+    const segmentStatusList = document.getElementById("segmentStatusList");
+    const modalClose = document.getElementById("modalClose");
+    const clientSearchForm = document.getElementById("clientSearchForm");
+    const clientId = document.getElementById("clientId");
+    const clientSearchButton = document.getElementById("clientSearchButton");
+    const clientResults = document.getElementById("clientResults");
+    const clientLookupActions = document.getElementById("clientLookupActions");
+    const clearClientLookupButton = document.getElementById("clearClientLookup");
+    const environmentCount = document.getElementById("environmentCount");
+    const operationalCount = document.getElementById("operationalCount");
+    const instabilityCount = document.getElementById("instabilityCount");
+    const unavailableCount = document.getElementById("unavailableCount");
+    const apiStatus = document.querySelector(".status-live");
+    const stars = [];
+    const comets = [];
+    const nodeElements = [];
+    let paused = false;
+    let pausedAt = 0;
+    let timeOffset = 0;
+    let lastTime = 0;
+    let activeNode = null;
+    let activeEnvironment = null;
+    let clientLookupActive = false;
+    let viewportX = 0;
+    let viewportY = 0;
+    let viewportZoom = 1;
+    let dragOriginX = 0;
+    let dragOriginY = 0;
+    let panOriginX = 0;
+    let panOriginY = 0;
+    let pinchDistance = 0;
+    let pinchZoom = 1;
+    let suppressNodeClick = false;
+    let clientDataCache = null;
+    let statusRecordsCache = [];
+    let nextCometAt = 6000 + Math.random() * 8000;
+    const activePointers = new Map();
+
+    environmentCount.textContent = environments.length;
+
+    environments.forEach((environment, index) => {
+      const node = document.createElement("button");
+      node.className = "node";
+      node.type = "button";
+      node.dataset.index = index;
+      node.style.setProperty("--node-color", statusConfig.desconhecido.color);
+      node.setAttribute("aria-label", "Abrir ambiente " + environment.name);
+      node.innerHTML = '<span class="node-dot" aria-hidden="true"></span><span class="node-label">' + environment.name + '</span><span class="node-incident" hidden></span>';
+      node.addEventListener("pointerdown", event => {
+        event.stopPropagation();
+      });
+      node.addEventListener("click", event => {
+        event.stopPropagation();
+        openEnvironment(index, node);
+      });
+      nodesContainer.appendChild(node);
+      nodeElements.push(node);
+    });
+
+    function normalize(value) {
+      return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
+    function normalizeStatus(value) {
+      const status = normalize(String(value || ""));
+
+      if (status.includes("indispon") || status.includes("unavailable") || status.includes("outage")) {
+        return "indisponibilidade";
+      }
+
+      if (status.includes("instabil") || status.includes("degrad") || status.includes("parcial")) {
+        return "instabilidade";
+      }
+
+      if (status.includes("oper")) {
+        return "operacional";
+      }
+
+      return "desconhecido";
+    }
+
+    function identifySegment(record) {
+      const urls = [record.producao || record["produção"], record.homologacao || record["homologação"]].filter(Boolean);
+
+      for (const value of urls) {
+        try {
+          const hostname = new URL(value).hostname.toLowerCase();
+          const match = hostname.match(/-s(\d+)(?:\.|$)/);
+          if (match) return Number(match[1]);
+        } catch {
+          // A URL será validada separadamente ao renderizar o acesso.
+        }
+      }
+
+      return urls.length ? 1 : null;
+    }
+
+    function getSegmentStatus(environment, segment) {
+      if (!environment || !segment || !statusRecordsCache.length) return null;
+      const environmentName = normalize(environment.name);
+      const prefix = environmentName + " s";
+      const hasSegmentedMonitoring = statusRecordsCache.some(record => normalize(record.ambiente).startsWith(prefix));
+      if (!hasSegmentedMonitoring) return null;
+
+      const segmentPrefix = environmentName + " s" + segment;
+      const matches = statusRecordsCache.filter(record => {
+        const recordName = normalize(record.ambiente);
+        return recordName === segmentPrefix || recordName.startsWith(segmentPrefix + " ") || recordName.startsWith(segmentPrefix + " -");
+      });
+      if (!matches.length) return { key: "desconhecido", description: "", segment };
+
+      const key = matches.reduce((current, record) => {
+        const recordKey = normalizeStatus(record.status);
+        return statusConfig[recordKey].severity > statusConfig[current].severity ? recordKey : current;
+      }, "desconhecido");
+      const description = matches.find(record => normalizeStatus(record.status) === key && record.descricao)?.descricao || "";
+      return { key, description, segment };
+    }
+
+    function getClientRecordMonitoring(record) {
+      const environment = environments.find(item => recordMatchesEnvironment(record.ambiente, item.name));
+      const inferredSegment = identifySegment(record);
+      const segmentStatus = getSegmentStatus(environment, inferredSegment);
+      return {
+        environment,
+        segment: segmentStatus ? inferredSegment : null,
+        key: segmentStatus?.key || environment?.statusKey || "desconhecido",
+        description: segmentStatus?.description || environment?.statusDescription || ""
+      };
+    }
+
+    function getSegmentIncidents(environment) {
+      const environmentPrefix = normalize(environment.name) + " s";
+      const grouped = new Map();
+
+      statusRecordsCache.forEach(record => {
+        const recordName = normalize(record.ambiente);
+        if (!recordName.startsWith(environmentPrefix)) return;
+        const key = normalizeStatus(record.status);
+        if (key !== "instabilidade" && key !== "indisponibilidade") return;
+
+        const segmentMatch = recordName.match(/\bs(\d+)\b/);
+        if (!segmentMatch) return;
+        const segment = Number(segmentMatch[1]);
+        const scope = recordName.includes("homolog") ? "HML" : recordName.includes("produc") ? "PRD" : "";
+        const current = grouped.get(segment) || { segment, scopes: new Set(), key };
+        if (scope) current.scopes.add(scope);
+        if (statusConfig[key].severity > statusConfig[current.key].severity) current.key = key;
+        grouped.set(segment, current);
+      });
+
+      return [...grouped.values()].sort((first, second) => first.segment - second.segment);
+    }
+
+    function renderEnvironmentSegmentStatus(environment) {
+      const environmentPrefix = normalize(environment.name) + " s";
+      const grouped = new Map();
+
+      statusRecordsCache.forEach(record => {
+        const recordName = normalize(record.ambiente || "");
+        if (!recordName.startsWith(environmentPrefix)) return;
+
+        const segmentMatch = recordName.match(/\bs(\d+)\b/);
+        if (!segmentMatch) return;
+
+        const segment = Number(segmentMatch[1]);
+        const scope = recordName.includes("homolog")
+          ? "Homologação"
+          : recordName.includes("produc")
+            ? "Produção"
+            : "Geral";
+        const key = normalizeStatus(record.status);
+        const group = grouped.get(segment) || { segment, records: [] };
+        group.records.push({ scope, key, description: record.descricao || "" });
+        grouped.set(segment, group);
+      });
+
+      segmentStatusList.replaceChildren();
+
+      if (!grouped.size) {
+        modalSegmentStatus.hidden = true;
+        return { hasSegments: false, key: environment.statusKey || "desconhecido", partial: false, affectedSegments: [] };
+      }
+
+      const groups = [...grouped.values()].sort((first, second) => first.segment - second.segment);
+      let worstKey = "desconhecido";
+      let hasOperational = false;
+      let hasIncident = false;
+
+      groups.forEach(group => {
+        const groupKey = group.records.reduce((current, record) => {
+          return statusConfig[record.key].severity > statusConfig[current].severity ? record.key : current;
+        }, "desconhecido");
+        if (statusConfig[groupKey].severity > statusConfig[worstKey].severity) worstKey = groupKey;
+
+        const card = document.createElement("article");
+        card.className = "segment-card";
+        card.style.setProperty("--segment-color", statusConfig[groupKey].color);
+
+        const header = document.createElement("div");
+        header.className = "segment-card-header";
+        const title = document.createElement("span");
+        title.textContent = "Segmento " + group.segment;
+        const overall = document.createElement("span");
+        overall.className = "segment-overall";
+        overall.textContent = statusConfig[groupKey].label;
+        header.append(title, overall);
+        card.appendChild(header);
+
+        group.records
+          .sort((first, second) => {
+            const order = { "Produção": 0, "Homologação": 1, "Geral": 2 };
+            return order[first.scope] - order[second.scope];
+          })
+          .forEach(record => {
+            if (record.key === "operacional") hasOperational = true;
+            if (record.key === "instabilidade" || record.key === "indisponibilidade") hasIncident = true;
+
+            const row = document.createElement("div");
+            row.className = "segment-scope-row";
+            const scope = document.createElement("span");
+            scope.textContent = record.scope;
+            const status = document.createElement("span");
+            status.className = "segment-scope-status";
+            status.style.setProperty("--segment-color", statusConfig[record.key].color);
+            status.textContent = statusConfig[record.key].label;
+            row.append(scope, status);
+            card.appendChild(row);
+
+            if (record.description) {
+              const description = document.createElement("p");
+              description.className = "segment-scope-description";
+              description.textContent = record.description;
+              card.appendChild(description);
+            }
+          });
+
+        segmentStatusList.appendChild(card);
+      });
+
+      modalSegmentStatus.hidden = false;
+      const affectedSegments = groups
+        .filter(group => group.records.some(record => record.key === worstKey))
+        .map(group => group.segment);
+      return { hasSegments: true, key: worstKey, partial: hasOperational && hasIncident, affectedSegments };
+    }
+
+    function updateSegmentIncidentBadges() {
+      environments.forEach((environment, index) => {
+        const incidents = getSegmentIncidents(environment);
+        const badge = nodeElements[index].querySelector(".node-incident");
+
+        if (!incidents.length) {
+          badge.hidden = true;
+          badge.textContent = "";
+          return;
+        }
+
+        const worstKey = incidents.reduce((current, incident) => statusConfig[incident.key].severity > statusConfig[current].severity
+          ? incident.key
+          : current, "desconhecido");
+        const labels = incidents.map(incident => {
+          const scopes = ["PRD", "HML"].filter(scope => incident.scopes.has(scope));
+          return "S" + incident.segment + (scopes.length ? " · " + scopes.join("/") : "");
+        });
+        badge.hidden = false;
+        badge.textContent = labels.length <= 2 ? labels.join("  ") : incidents.length + " ocorrências";
+        badge.style.setProperty("--incident-color", statusConfig[worstKey].color);
+      });
+    }
+
+    function recordMatchesEnvironment(recordName, environmentName) {
+      const record = normalize(recordName);
+      const environment = normalize(environmentName);
+
+      if (environment === "vega tms") {
+        return record.includes("vega") && (record.includes("tms") || record.includes("gko"));
+      }
+
+      if (environment === "vega wms") {
+        return record.includes("vega") && record.includes("wms");
+      }
+
+      if (environment === "vega") {
+        return record.startsWith("vega") && !record.includes("wms") && !record.includes("gko") && !record.includes("tms");
+      }
+
+      if (environment === "aldebaran" || environment === "atlas") {
+        return record.includes(environment);
+      }
+
+      return record === environment || record.startsWith(environment + " ") || record.startsWith(environment + " -");
+    }
+
+    function aggregateEnvironmentStatus(records, environment) {
+      const matches = records.filter(record => recordMatchesEnvironment(record.ambiente, environment.name));
+
+      if (!matches.length) {
+        return {
+          key: "desconhecido",
+          description: "",
+          records: []
+        };
+      }
+
+      const worst = matches.reduce((current, record) => {
+        const key = normalizeStatus(record.status);
+        return statusConfig[key].severity > statusConfig[current].severity ? key : current;
+      }, "desconhecido");
+      const relevantDescriptions = matches
+        .filter(record => normalizeStatus(record.status) === worst && record.descricao)
+        .map(record => record.descricao);
+
+      return {
+        key: worst,
+        description: relevantDescriptions[0] || "",
+        records: matches
+      };
+    }
+
+    function updateStatusSummary() {
+      const counts = environments.reduce((summary, environment) => {
+        summary[environment.statusKey || "desconhecido"] += 1;
+        return summary;
+      }, { operacional: 0, instabilidade: 0, indisponibilidade: 0, desconhecido: 0 });
+
+      operationalCount.textContent = counts.operacional;
+      instabilityCount.textContent = counts.instabilidade;
+      unavailableCount.textContent = counts.indisponibilidade;
+    }
+
+    function applyEnvironmentStatus(index, status) {
+      const environment = environments[index];
+      const node = nodeElements[index];
+      const config = statusConfig[status.key];
+      environment.statusKey = status.key;
+      environment.statusDescription = status.description;
+      environment.statusRecords = status.records;
+      node.style.setProperty("--node-color", config.color);
+      node.dataset.status = status.key;
+      node.setAttribute("aria-label", "Abrir ambiente " + environment.name + ". Status: " + config.label);
+    }
+
+    async function loadEnvironmentStatuses() {
+      apiStatus.textContent = "sincronizando";
+      apiStatus.dataset.state = "loading";
+
+      try {
+        const response = await fetch(STATUS_API, { cache: "no-store", headers: { Accept: "application/json" } });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const payload = await response.json();
+        const records = Array.isArray(payload) ? payload : (Array.isArray(payload.value) ? payload.value : []);
+        statusRecordsCache = records;
+
+        environments.forEach((environment, index) => {
+          applyEnvironmentStatus(index, aggregateEnvironmentStatus(records, environment));
+        });
+
+        updateSegmentIncidentBadges();
+        updateStatusSummary();
+        apiStatus.textContent = "atualizado";
+        apiStatus.dataset.state = "ready";
+      } catch (error) {
+        console.error("Não foi possível carregar os status dos ambientes.", error);
+        apiStatus.textContent = "sem conexão";
+        apiStatus.dataset.state = "error";
+        environments.forEach((environment, index) => {
+          applyEnvironmentStatus(index, {
+            key: environment.statusKey || "desconhecido",
+            description: environment.statusDescription || "",
+            records: environment.statusRecords || []
+          });
+        });
+        updateStatusSummary();
+      }
+    }
+
+    function resizeCanvas() {
+      const scale = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(window.innerWidth * scale);
+      canvas.height = Math.floor(window.innerHeight * scale);
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      context.setTransform(scale, 0, 0, scale, 0, 0);
+      createStars();
+    }
+
+    function createStars() {
+      stars.length = 0;
+      const count = Math.min(210, Math.floor((window.innerWidth * window.innerHeight) / 6200));
+
+      for (let index = 0; index < count; index += 1) {
+        stars.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          size: Math.random() * 1.25 + 0.25,
+          alpha: Math.random() * 0.55 + 0.15,
+          phase: Math.random() * Math.PI * 2,
+          speed: Math.random() * 0.0007 + 0.0003
+        });
+      }
+    }
+
+    function createComet() {
+      const fromLeft = Math.random() > 0.5;
+      const speed = 2.1 + Math.random() * 1.5;
+      const directionX = fromLeft ? 1 : -1;
+      const directionY = 0.24 + Math.random() * 0.28;
+      const warm = Math.random() > 0.76;
+
+      comets.push({
+        x: fromLeft ? -160 : window.innerWidth + 160,
+        y: -40 + Math.random() * window.innerHeight * 0.58,
+        vx: speed * directionX,
+        vy: speed * directionY,
+        length: 110 + Math.random() * 150,
+        size: 1.2 + Math.random() * 1.6,
+        alpha: 0.18 + Math.random() * 0.16,
+        color: warm ? "255, 190, 104" : "180, 229, 255",
+        glow: warm ? "255, 132, 72" : "84, 217, 255"
+      });
+    }
+
+    function updateAndDrawComets(time) {
+      if (time >= nextCometAt && comets.length < 1) {
+        createComet();
+        nextCometAt = time + 10000 + Math.random() * 15000;
+      }
+
+      for (let index = comets.length - 1; index >= 0; index -= 1) {
+        const comet = comets[index];
+        const velocity = Math.hypot(comet.vx, comet.vy);
+        const tailX = comet.x - (comet.vx / velocity) * comet.length;
+        const tailY = comet.y - (comet.vy / velocity) * comet.length;
+        const trail = context.createLinearGradient(comet.x, comet.y, tailX, tailY);
+        trail.addColorStop(0, "rgba(" + comet.color + ", " + comet.alpha + ")");
+        trail.addColorStop(0.18, "rgba(" + comet.glow + ", " + comet.alpha * 0.62 + ")");
+        trail.addColorStop(1, "rgba(" + comet.glow + ", 0)");
+
+        context.save();
+        context.beginPath();
+        context.moveTo(comet.x, comet.y);
+        context.lineTo(tailX, tailY);
+        context.strokeStyle = trail;
+        context.lineWidth = comet.size;
+        context.lineCap = "round";
+        context.shadowBlur = 8;
+        context.shadowColor = "rgba(" + comet.glow + ", 0.25)";
+        context.stroke();
+
+        context.beginPath();
+        context.fillStyle = "rgba(" + comet.color + ", 0.55)";
+        context.arc(comet.x, comet.y, comet.size * 1.15, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+
+        comet.x += comet.vx;
+        comet.y += comet.vy;
+
+        if (
+          comet.x < -260 ||
+          comet.x > window.innerWidth + 260 ||
+          comet.y > window.innerHeight + 180
+        ) {
+          comets.splice(index, 1);
+        }
+      }
+    }
+
+    function drawSpace(time) {
+      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      const background = context.createLinearGradient(0, 0, 0, window.innerHeight);
+      background.addColorStop(0, "#070b1b");
+      background.addColorStop(0.55, "#050713");
+      background.addColorStop(1, "#03040c");
+      context.fillStyle = background;
+      context.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+      for (const star of stars) {
+        const glow = Math.sin(time * star.speed + star.phase) * 0.2;
+        context.beginPath();
+        context.fillStyle = "rgba(215, 228, 255, " + Math.max(0.08, star.alpha + glow) + ")";
+        context.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      updateAndDrawComets(time);
+    }
+
+    function updateNodes(time) {
+      const size = system.offsetWidth;
+      const effectiveTime = paused ? pausedAt : time - timeOffset;
+
+      environments.forEach((environment, index) => {
+        const sameOrbit = environments.filter(item => item.orbit === environment.orbit);
+        const orbitIndex = sameOrbit.indexOf(environment);
+        const angle = effectiveTime * orbitSpeeds[environment.orbit] + (Math.PI * 2 * orbitIndex / sameOrbit.length) - Math.PI / 2;
+        const radius = size * orbitRadii[environment.orbit];
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius * orbitTilt[environment.orbit];
+        const depth = (Math.sin(angle) + 1) / 2;
+        const scale = 0.76 + depth * 0.36;
+        const node = nodeElements[index];
+        const isInteractive = node.matches(":hover, :focus-visible") || node.classList.contains("is-match");
+        node.style.transform = "translate(-50%, -50%) translate(" + x.toFixed(2) + "px, " + y.toFixed(2) + "px) scale(" + (scale + (isInteractive ? 0.12 : 0)).toFixed(3) + ")";
+        node.style.zIndex = String(10 + Math.round(depth * 20));
+
+        if (!node.classList.contains("is-hidden")) {
+          node.style.opacity = String(0.48 + depth * 0.52);
+        }
+      });
+
+      const satelliteAngle = effectiveTime * 0.0000045 - Math.PI * 0.2;
+      const satelliteRadius = size * 1.08;
+      const satelliteX = Math.cos(satelliteAngle) * satelliteRadius;
+      const satelliteY = Math.sin(satelliteAngle) * satelliteRadius * 0.55;
+      deepSatellite.style.setProperty("--satellite-x", satelliteX.toFixed(2) + "px");
+      deepSatellite.style.setProperty("--satellite-y", satelliteY.toFixed(2) + "px");
+      const satelliteRotation = satelliteAngle * 180 / Math.PI + 90;
+      deepSatellite.style.setProperty("--satellite-rotation", satelliteRotation.toFixed(2) + "deg");
+      deepSatellite.style.setProperty("--satellite-counter-rotation", (-satelliteRotation).toFixed(2) + "deg");
+    }
+
+    function animate(time) {
+      lastTime = time;
+      drawSpace(time);
+      updateNodes(time);
+      requestAnimationFrame(animate);
+    }
+
+    function showLookupMessage(message) {
+      searchResult.innerHTML = '<div class="empty-result">' + message + '</div>';
+      searchResult.classList.add("is-visible");
+    }
+
+    function clearClientLookup() {
+      clientLookupActive = false;
+      search.value = "";
+      searchResult.innerHTML = "";
+      searchResult.classList.remove("is-visible");
+      nodeElements.forEach((node, index) => {
+        node.classList.remove("is-match", "is-hidden");
+        node.style.setProperty("--node-color", statusConfig[environments[index].statusKey || "desconhecido"].color);
+      });
+      clientSearchForm.hidden = false;
+      clientLookupActions.hidden = true;
+      activeEnvironment = null;
+      activeNode = null;
+      restoreOverviewViewport();
+    }
+
+    function parseCsvLine(line) {
+      const values = [];
+      let value = "";
+      let quoted = false;
+
+      for (let index = 0; index < line.length; index += 1) {
+        const character = line[index];
+
+        if (character === '"') {
+          if (quoted && line[index + 1] === '"') {
+            value += '"';
+            index += 1;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (character === ";" && !quoted) {
+          values.push(value.trim());
+          value = "";
+        } else {
+          value += character;
+        }
+      }
+
+      values.push(value.trim());
+      return values;
+    }
+
+    async function loadClientData() {
+      if (clientDataCache) {
+        return clientDataCache;
+      }
+
+      const response = await fetch("./clientes.csv?v=20261001-1", { cache: "no-store" });
+
+      if (!response.ok) {
+        throw new Error("Não foi possível carregar clientes.csv");
+      }
+
+      const text = await response.text();
+      const lines = text
+        .replace(/^\uFEFF/, "")
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      if (!lines.length) {
+        return [];
+      }
+
+      const headers = parseCsvLine(lines.shift()).map(header => normalize(header));
+      clientDataCache = lines.map(line => {
+        const values = parseCsvLine(line);
+        return headers.reduce((record, header, index) => {
+          record[header] = values[index] || "";
+          return record;
+        }, {});
+      });
+
+      return clientDataCache;
+    }
+
+    function isSafeAccessUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch {
+        return false;
+      }
+    }
+
+    function clientEnvironmentMatches(environmentName, selectedName) {
+      const clientEnvironment = normalize(environmentName);
+      const selected = normalize(selectedName);
+
+      if (selected === "vega tms") {
+        return clientEnvironment.includes("vega") && (clientEnvironment.includes("tms") || clientEnvironment.includes("gko"));
+      }
+
+      if (selected === "vega wms") {
+        return clientEnvironment.includes("vega") && clientEnvironment.includes("wms");
+      }
+
+      return clientEnvironment === selected || clientEnvironment.startsWith(selected + " ") || selected.startsWith(clientEnvironment + " ");
+    }
+
+    function appendAccessLink(container, type, url) {
+      if (!isSafeAccessUrl(url)) {
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.className = "access-link";
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener";
+
+      const typeLabel = document.createElement("span");
+      typeLabel.className = "access-link-type";
+      typeLabel.textContent = type;
+
+      const urlLabel = document.createElement("span");
+      urlLabel.className = "access-link-url";
+      urlLabel.textContent = url;
+
+      const arrow = document.createElement("span");
+      arrow.className = "access-link-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "↗";
+
+      link.append(typeLabel, urlLabel, arrow);
+      container.appendChild(link);
+    }
+
+    function renderClientAccesses(records) {
+      clientResults.innerHTML = "";
+
+      if (!records.length) {
+        clientResults.innerHTML = '<div class="client-message">ID do cliente não encontrado.</div>';
+        return;
+      }
+
+      const orderedRecords = [...records].sort((first, second) => {
+        const firstMatches = clientEnvironmentMatches(first.ambiente, activeEnvironment?.name || "");
+        const secondMatches = clientEnvironmentMatches(second.ambiente, activeEnvironment?.name || "");
+        return Number(secondMatches) - Number(firstMatches);
+      });
+      let renderedCards = 0;
+
+      orderedRecords.forEach(record => {
+        const production = record.producao || record["produção"] || "";
+        const homologation = record.homologacao || record["homologação"] || "";
+
+        if (!isSafeAccessUrl(production) && !isSafeAccessUrl(homologation)) {
+          return;
+        }
+
+        const isCurrent = clientEnvironmentMatches(record.ambiente, activeEnvironment?.name || "");
+        const monitoring = getClientRecordMonitoring(record);
+        const mappedEnvironment = monitoring.environment;
+        const mappedStatus = statusConfig[monitoring.key];
+        const card = document.createElement("article");
+        card.className = "access-card" + (isCurrent ? " is-current" : "");
+
+        const header = document.createElement("div");
+        header.className = "access-card-header";
+
+        const title = document.createElement("strong");
+        title.className = "access-card-title";
+        title.textContent = (record.ambiente || "Ambiente") + (monitoring.segment ? " · Segmento " + monitoring.segment : "");
+        header.appendChild(title);
+
+        if (isCurrent) {
+          const badge = document.createElement("span");
+          badge.className = "access-card-badge";
+          badge.textContent = "Ambiente selecionado";
+          header.appendChild(badge);
+        } else if (!activeEnvironment) {
+          const badge = document.createElement("span");
+          badge.className = "access-card-badge";
+          badge.style.setProperty("--badge-color", mappedStatus.color);
+          badge.textContent = mappedStatus.label;
+          header.appendChild(badge);
+        }
+
+        if (!activeEnvironment && monitoring.description) {
+          const statusDescription = document.createElement("p");
+          statusDescription.className = "access-card-status-description";
+          statusDescription.textContent = monitoring.description;
+          card.appendChild(statusDescription);
+        }
+
+        const links = document.createElement("div");
+        links.className = "access-links";
+        appendAccessLink(links, "Produção", production);
+        appendAccessLink(links, "Homologação", homologation);
+        card.prepend(header);
+        card.appendChild(links);
+        clientResults.appendChild(card);
+        renderedCards += 1;
+      });
+
+      if (!renderedCards) {
+        clientResults.innerHTML = '<div class="client-message">O cliente foi encontrado, mas não possui URLs válidas cadastradas.</div>';
+      }
+    }
+
+    function openClientOverview(requestedId, records) {
+      const seenRecords = new Set();
+      const uniqueRecords = records.filter(record => {
+        const key = [record.ambiente, record.producao || record["produção"], record.homologacao || record["homologação"]]
+          .map(value => normalize(value || ""))
+          .join("|");
+        if (seenRecords.has(key)) return false;
+        seenRecords.add(key);
+        return true;
+      });
+      const clientMonitoring = uniqueRecords.map(record => ({ record, monitoring: getClientRecordMonitoring(record) }));
+      const matchedEnvironments = environments
+        .map((environment, index) => {
+          const related = clientMonitoring.filter(item => item.monitoring.environment === environment);
+          const key = related.reduce((current, item) => statusConfig[item.monitoring.key].severity > statusConfig[current].severity
+            ? item.monitoring.key
+            : current, "desconhecido");
+          return { environment, index, related, key };
+        })
+        .filter(item => item.related.length);
+      const matchedIndexes = new Set(matchedEnvironments.map(item => item.index));
+      const worstStatusKey = matchedEnvironments.reduce((current, item) => {
+        return statusConfig[item.key].severity > statusConfig[current].severity ? item.key : current;
+      }, "desconhecido");
+      const overviewColor = matchedEnvironments.length ? statusConfig[worstStatusKey].color : statusConfig.desconhecido.color;
+
+      nodeElements.forEach((node, index) => {
+        const match = matchedEnvironments.find(item => item.index === index);
+        node.classList.toggle("is-match", Boolean(match));
+        node.classList.toggle("is-hidden", !match);
+        if (match) node.style.setProperty("--node-color", statusConfig[match.key].color);
+      });
+
+      clientLookupActive = true;
+      activeEnvironment = null;
+      activeNode = null;
+      modal.style.setProperty("--modal-color", overviewColor);
+      modalKicker.textContent = "Acessos do cliente";
+      modalTitle.textContent = "Cliente " + requestedId;
+      modalStatus.textContent = matchedEnvironments.length + (matchedEnvironments.length === 1 ? " ambiente" : " ambientes");
+      modalDescription.textContent = matchedEnvironments.length
+        ? "Ambientes localizados para este cliente. Consulte o status e escolha o acesso desejado."
+        : "O cadastro foi encontrado, mas nenhum ambiente pôde ser associado à órbita.";
+      modalSegmentStatus.hidden = true;
+      segmentStatusList.replaceChildren();
+      clientSearchForm.hidden = true;
+      clientLookupActions.hidden = false;
+      renderClientAccesses(uniqueRecords);
+      searchResult.classList.remove("is-visible");
+      document.body.classList.add("modal-open");
+      modalLayer.classList.add("is-open");
+      modalLayer.setAttribute("aria-hidden", "false");
+      fitSystemBesidePanel();
+      window.setTimeout(() => modalClose.focus(), 100);
+    }
+
+    async function searchClientFromHeader(event) {
+      event.preventDefault();
+      const requestedId = search.value.trim();
+
+      if (!requestedId) {
+        showLookupMessage("Digite o ID do cliente para continuar.");
+        search.focus();
+        return;
+      }
+
+      if (!/^\d+$/.test(requestedId)) {
+        showLookupMessage("O ID deve conter somente números.");
+        search.focus();
+        return;
+      }
+
+      clientLookupButton.disabled = true;
+      clientLookupButton.textContent = "Buscando...";
+      showLookupMessage("Localizando ambientes...");
+
+      try {
+        const records = await loadClientData();
+        const matches = records.filter(record => String(record.id || "").trim() === requestedId);
+
+        if (!matches.length) {
+          showLookupMessage("ID não encontrado na base de testes.");
+          return;
+        }
+
+        openClientOverview(requestedId, matches);
+      } catch (error) {
+        console.error("Erro ao localizar ambientes do cliente.", error);
+        showLookupMessage("Não foi possível consultar os ambientes agora.");
+      } finally {
+        clientLookupButton.disabled = false;
+        clientLookupButton.textContent = "Localizar";
+      }
+    }
+
+    async function searchClientAccesses(event) {
+      event.preventDefault();
+      const requestedId = clientId.value.trim();
+
+      if (!requestedId) {
+        clientId.focus();
+        return;
+      }
+
+      clientSearchButton.disabled = true;
+      clientSearchButton.textContent = "Buscando...";
+      clientResults.innerHTML = '<div class="client-message">Consultando acessos do cliente...</div>';
+
+      try {
+        const records = await loadClientData();
+        const matches = records.filter(record => String(record.id || "").trim() === requestedId);
+        renderClientAccesses(matches);
+      } catch (error) {
+        console.error("Erro ao consultar URLs do cliente.", error);
+        clientResults.innerHTML = '<div class="client-message">Não foi possível carregar o arquivo <strong>clientes.csv</strong>. Verifique se ele está publicado junto desta página.</div>';
+      } finally {
+        clientSearchButton.disabled = false;
+        clientSearchButton.textContent = "Buscar acessos";
+      }
+    }
+
+    function openEnvironment(index, trigger) {
+      const environment = environments[index];
+      const segmentSummary = renderEnvironmentSegmentStatus(environment);
+      const statusKey = segmentSummary.hasSegments ? segmentSummary.key : (environment.statusKey || "desconhecido");
+      const status = statusConfig[statusKey];
+      clientLookupActive = false;
+      activeNode = trigger;
+      activeEnvironment = environment;
+      modal.style.setProperty("--modal-color", status.color);
+      modalKicker.textContent = "Ambiente cloud";
+      modalTitle.textContent = environment.name;
+      const affectedSegmentLabel = segmentSummary.affectedSegments.length === 1
+        ? " no segmento " + segmentSummary.affectedSegments[0]
+        : segmentSummary.affectedSegments.length > 1
+          ? " nos segmentos " + segmentSummary.affectedSegments.join(" e ")
+          : "";
+      modalStatus.textContent = segmentSummary.partial && statusKey === "instabilidade"
+        ? "Instabilidade parcial" + affectedSegmentLabel
+        : segmentSummary.partial && statusKey === "indisponibilidade"
+          ? "Indisponibilidade parcial" + affectedSegmentLabel
+          : status.label;
+      modalDescription.textContent = environment.statusDescription || environment.description;
+      clientId.value = "";
+      clientResults.innerHTML = "";
+      clientSearchForm.hidden = false;
+      clientLookupActions.hidden = true;
+
+      createBurst(trigger, status.color);
+      document.body.classList.add("modal-open");
+      modalLayer.classList.add("is-open");
+      modalLayer.setAttribute("aria-hidden", "false");
+      fitSystemBesidePanel();
+      window.setTimeout(() => clientId.focus(), 100);
+    }
+
+    function closeModal() {
+      const shouldClearLookup = clientLookupActive;
+      modalLayer.classList.remove("is-open");
+      modalLayer.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+
+      if (shouldClearLookup) {
+        clearClientLookup();
+        search.focus();
+      } else if (activeNode) {
+        restoreOverviewViewport();
+        activeNode.focus();
+      }
+    }
+
+    function createBurst(trigger, color) {
+      const rect = trigger.getBoundingClientRect();
+      const burst = document.createElement("span");
+      burst.className = "burst";
+      burst.style.left = rect.left + rect.width / 2 + "px";
+      burst.style.top = rect.top + rect.height / 2 + "px";
+      burst.style.setProperty("--burst-color", color);
+      document.body.appendChild(burst);
+      window.setTimeout(() => burst.remove(), 700);
+    }
+
+    function toggleMotion() {
+      paused = !paused;
+
+      if (paused) {
+        pausedAt = lastTime - timeOffset;
+      } else {
+        timeOffset = lastTime - pausedAt;
+      }
+
+      motionControl.setAttribute("aria-pressed", String(paused));
+      motionControl.querySelector("span").textContent = paused ? "Retomar órbitas" : "Pausar órbitas";
+      motionControl.querySelector("svg").innerHTML = paused
+        ? '<path d="M8 5v14l11-7z"/>'
+        : '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+    }
+
+    function clampZoom(value) {
+      return Math.min(2.2, Math.max(0.65, value));
+    }
+
+    function applyViewport() {
+      system.style.setProperty("--pan-x", viewportX.toFixed(1) + "px");
+      system.style.setProperty("--pan-y", viewportY.toFixed(1) + "px");
+      system.style.setProperty("--zoom", viewportZoom.toFixed(3));
+    }
+
+    function fitSystemBesidePanel() {
+      if (window.innerWidth <= 720) return;
+
+      window.setTimeout(() => {
+        if (!modalLayer.classList.contains("is-open")) return;
+
+        const stageRect = document.querySelector(".stage").getBoundingClientRect();
+        const modalRect = modal.getBoundingClientRect();
+        const systemSize = system.offsetWidth;
+        const availableWidth = Math.max(320, modalRect.left - stageRect.left - 32);
+        const availableHeight = Math.max(320, stageRect.height - 28);
+        const horizontalScale = availableWidth / (systemSize * 1.28);
+        const verticalScale = availableHeight / (systemSize * 0.76);
+
+        system.style.transition = "transform 520ms cubic-bezier(.2, .8, .2, 1)";
+        viewportX = 0;
+        viewportY = 0;
+        viewportZoom = clampZoom(Math.min(horizontalScale, verticalScale, 1.2));
+        applyViewport();
+        window.setTimeout(() => {
+          system.style.transition = "";
+        }, 540);
+      }, 330);
+    }
+
+    function restoreOverviewViewport() {
+      system.style.transition = "transform 420ms cubic-bezier(.2, .8, .2, 1)";
+      viewportX = 0;
+      viewportY = 0;
+      viewportZoom = 1;
+      applyViewport();
+      window.setTimeout(() => {
+        system.style.transition = "";
+      }, 440);
+    }
+
+    function centerSystem() {
+      clearClientLookup();
+    }
+
+    function pointerDistance() {
+      const pointers = Array.from(activePointers.values());
+      if (pointers.length < 2) {
+        return 0;
+      }
+
+      return Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
+    }
+
+    system.addEventListener("pointerdown", event => {
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      system.setPointerCapture(event.pointerId);
+      system.classList.add("is-dragging");
+
+      if (activePointers.size === 1) {
+        dragOriginX = event.clientX;
+        dragOriginY = event.clientY;
+        panOriginX = viewportX;
+        panOriginY = viewportY;
+        suppressNodeClick = false;
+      } else if (activePointers.size === 2) {
+        pinchDistance = pointerDistance();
+        pinchZoom = viewportZoom;
+      }
+    });
+
+    system.addEventListener("pointermove", event => {
+      if (!activePointers.has(event.pointerId)) {
+        return;
+      }
+
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (activePointers.size >= 2) {
+        const distance = pointerDistance();
+        if (pinchDistance > 0) {
+          viewportZoom = clampZoom(pinchZoom * (distance / pinchDistance));
+          applyViewport();
+        }
+        suppressNodeClick = true;
+        return;
+      }
+
+      const deltaX = event.clientX - dragOriginX;
+      const deltaY = event.clientY - dragOriginY;
+      viewportX = panOriginX + deltaX;
+      viewportY = panOriginY + deltaY;
+      suppressNodeClick = Math.hypot(deltaX, deltaY) > 5;
+      applyViewport();
+    });
+
+    function releasePointer(event) {
+      activePointers.delete(event.pointerId);
+
+      if (activePointers.size === 1) {
+        const remaining = Array.from(activePointers.values())[0];
+        dragOriginX = remaining.x;
+        dragOriginY = remaining.y;
+        panOriginX = viewportX;
+        panOriginY = viewportY;
+      }
+
+      if (!activePointers.size) {
+        system.classList.remove("is-dragging");
+        window.setTimeout(() => {
+          suppressNodeClick = false;
+        }, 0);
+      }
+    }
+
+    system.addEventListener("pointerup", releasePointer);
+    system.addEventListener("pointercancel", releasePointer);
+    system.addEventListener("wheel", event => {
+      event.preventDefault();
+      const previousZoom = viewportZoom;
+      const zoomFactor = Math.exp(-event.deltaY * 0.0012);
+      viewportZoom = clampZoom(viewportZoom * zoomFactor);
+
+      const rect = system.getBoundingClientRect();
+      const cursorX = event.clientX - (rect.left + rect.width / 2);
+      const cursorY = event.clientY - (rect.top + rect.height / 2);
+      const ratio = viewportZoom / previousZoom - 1;
+      viewportX -= cursorX * ratio;
+      viewportY -= cursorY * ratio;
+      applyViewport();
+    }, { passive: false });
+
+    deepSatellite.addEventListener("pointerdown", event => event.stopPropagation());
+    deepSatellite.addEventListener("click", event => event.stopPropagation());
+
+    clientLookupForm.addEventListener("submit", searchClientFromHeader);
+    search.addEventListener("input", () => {
+      searchResult.innerHTML = "";
+      searchResult.classList.remove("is-visible");
+    });
+    motionControl.addEventListener("click", toggleMotion);
+    centerControl.addEventListener("click", centerSystem);
+    modalClose.addEventListener("click", closeModal);
+    clientSearchForm.addEventListener("submit", searchClientAccesses);
+    clearClientLookupButton.addEventListener("click", closeModal);
+
+    modalLayer.addEventListener("click", event => {
+      if (event.target === modalLayer) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.closest(".search-wrap")) {
+        searchResult.classList.remove("is-visible");
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "/" && document.activeElement !== search) {
+        event.preventDefault();
+        search.focus();
+      }
+
+      if (event.key === "Escape") {
+        if (modalLayer.classList.contains("is-open")) {
+          closeModal();
+        } else {
+          search.blur();
+          clearClientLookup();
+        }
+      }
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    loadEnvironmentStatuses();
+    window.setInterval(loadEnvironmentStatuses, 60000);
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

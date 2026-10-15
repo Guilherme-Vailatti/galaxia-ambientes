@@ -1,0 +1,8 @@
+LIGAR SERVER GALAXIA:
+powershell: C:\Users\Guilherme.Vailatti\Desktop\teste-espaco
+
+python -m http.server 5500
+
+URL
+
+python -m http.server 5500
