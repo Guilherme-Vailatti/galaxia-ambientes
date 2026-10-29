@@ -1575,7 +1575,8 @@
       { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
     ];
 
-    const STATUS_API = "https://portal.seniorcloud.com.br/api/cadastros/status-ambiente/external";
+    const LEGACY_STATUS_API = "https://diario.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
+    const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || LEGACY_STATUS_API;
     const statusConfig = {
       operacional: { label: "Operacional", color: "#72f1a6", severity: 1 },
       instabilidade: { label: "Instabilidade", color: "#ffc857", severity: 2 },
