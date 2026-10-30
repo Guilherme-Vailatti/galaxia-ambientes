@@ -1575,7 +1575,7 @@
       { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
     ];
 
-    const LEGACY_STATUS_API = "https://diario.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
+    const LEGACY_STATUS_API = "https://portal.seniorcloud.com.br/api/cadastros/status-ambiente/external";
     const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || LEGACY_STATUS_API;
     const statusConfig = {
       operacional: { label: "Operacional", color: "#72f1a6", severity: 1 },
@@ -1644,7 +1644,7 @@
 
     environmentCount.textContent = environments.length;
 
-    environments.forEach((environment, index) => {
+    function createEnvironmentNode(environment, index) {
       const node = document.createElement("button");
       node.className = "node";
       node.type = "button";
@@ -1661,7 +1661,9 @@
       });
       nodesContainer.appendChild(node);
       nodeElements.push(node);
-    });
+    }
+
+    environments.forEach(createEnvironmentNode);
 
     function normalize(value) {
       return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -1683,6 +1685,39 @@
       }
 
       return "desconhecido";
+    }
+
+    function baseEnvironmentName(recordName) {
+      return String(recordName || "")
+        .replace(/\s+-\s+(ProduÃ§Ã£o|HomologaÃ§Ã£o)$/i, "")
+        .replace(/\s+(ProduÃ§Ã£o|HomologaÃ§Ã£o)$/i, "")
+        .replace(/\s+S\d+$/i, "")
+        .trim();
+    }
+
+    function leastPopulatedOrbit() {
+      const counts = orbitRadii.map((_, orbit) => environments.filter(environment => environment.orbit === orbit).length);
+      return counts.indexOf(Math.min(...counts));
+    }
+
+    function syncEnvironmentsFromStatus(records) {
+      const known = new Set(environments.map(environment => normalize(environment.name)));
+      records.forEach(record => {
+        const name = String(record.grupo || record.groupName || baseEnvironmentName(record.ambiente)).trim();
+        const key = normalize(name);
+        if (!name || known.has(key)) return;
+
+        const environment = {
+          name,
+          orbit: leastPopulatedOrbit(),
+          url: record.url || "#",
+          description: "Portal de acesso ao ambiente " + name + "."
+        };
+        environments.push(environment);
+        known.add(key);
+        createEnvironmentNode(environment, environments.length - 1);
+      });
+      environmentCount.textContent = environments.length;
     }
 
     function identifySegment(record) {
@@ -1961,6 +1996,7 @@
         const payload = await response.json();
         const records = Array.isArray(payload) ? payload : (Array.isArray(payload.value) ? payload.value : []);
         statusRecordsCache = records;
+        syncEnvironmentsFromStatus(records);
 
         environments.forEach((environment, index) => {
           applyEnvironmentStatus(index, aggregateEnvironmentStatus(records, environment));
