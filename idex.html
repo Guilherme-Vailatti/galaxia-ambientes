@@ -1575,7 +1575,7 @@
       { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
     ];
 
-    const LEGACY_STATUS_API = "https://diario-dev.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
+    const LEGACY_STATUS_API = "https://portal-dev.seniorcloud.com.br/api/cadastros/status-ambiente/external";
     const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || LEGACY_STATUS_API;
     const statusConfig = {
       operacional: { label: "Operacional", color: "#72f1a6", severity: 1 },
@@ -2017,6 +2017,7 @@
 
         updateSegmentIncidentBadges();
         updateStatusSummary();
+        refreshOpenEnvironmentStatus();
         apiStatus.textContent = "atualizado";
         apiStatus.dataset.state = "ready";
       } catch (error) {
@@ -2513,6 +2514,31 @@
         clientSearchButton.disabled = false;
         clientSearchButton.textContent = "Buscar acessos";
       }
+    }
+
+    function refreshOpenEnvironmentStatus() {
+      if (!activeEnvironment || clientLookupActive || !modalLayer.classList.contains("is-open")) return;
+
+      const environment = environments.find(item => normalize(item.name) === normalize(activeEnvironment.name));
+      if (!environment) return;
+
+      activeEnvironment = environment;
+      const segmentSummary = renderEnvironmentSegmentStatus(environment);
+      const statusKey = segmentSummary.hasSegments ? segmentSummary.key : (environment.statusKey || "desconhecido");
+      const status = statusConfig[statusKey];
+      const affectedSegmentLabel = segmentSummary.affectedSegments.length === 1
+        ? " no segmento " + segmentSummary.affectedSegments[0]
+        : segmentSummary.affectedSegments.length > 1
+          ? " nos segmentos " + segmentSummary.affectedSegments.join(" e ")
+          : "";
+
+      modal.style.setProperty("--modal-color", status.color);
+      modalStatus.textContent = segmentSummary.partial && statusKey === "instabilidade"
+        ? "Instabilidade parcial" + affectedSegmentLabel
+        : segmentSummary.partial && statusKey === "indisponibilidade"
+          ? "Indisponibilidade parcial" + affectedSegmentLabel
+          : status.label;
+      modalDescription.textContent = environment.statusDescription || environment.description;
     }
 
     function openEnvironment(index, trigger) {
