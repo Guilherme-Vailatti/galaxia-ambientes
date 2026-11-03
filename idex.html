@@ -1575,8 +1575,10 @@
       { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
     ];
 
-    const LEGACY_STATUS_API = "https://portal-dev.seniorcloud.com.br/api/cadastros/status-ambiente/external";
-    const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || LEGACY_STATUS_API;
+    const STATUS_API_DEFAULT = "https://diario-dev.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
+    const CLIENT_ACCESS_API_DEFAULT = "https://diario-dev.seniorcloud.com.br/api/portal-status-cloud/client-access";
+    const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || STATUS_API_DEFAULT;
+    const CLIENT_ACCESS_API = new URLSearchParams(window.location.search).get("clientAccessApi") || CLIENT_ACCESS_API_DEFAULT;
     const statusConfig = {
       operacional: { label: "Operacional", color: "#72f1a6", severity: 1 },
       instabilidade: { label: "Instabilidade", color: "#ffc857", severity: 2 },
@@ -1637,7 +1639,6 @@
     let pinchDistance = 0;
     let pinchZoom = 1;
     let suppressNodeClick = false;
-    let clientDataCache = null;
     let statusRecordsCache = [];
     let nextCometAt = 6000 + Math.random() * 8000;
     const activePointers = new Map();
@@ -1773,13 +1774,20 @@
 
     function getClientRecordMonitoring(record) {
       const environment = environments.find(item => recordMatchesEnvironment(record.ambiente, item.name));
-      const inferredSegment = identifySegment(record);
+      const explicitSegment = Number(String(record.segmento || "").replace(/\D/g, "")) || null;
+      const inferredSegment = explicitSegment || identifySegment(record);
       const segmentStatus = getSegmentStatus(environment, inferredSegment);
+      const directStatuses = [
+        { key: normalizeStatus(record.productionStatus), description: record.productionDescription || "" },
+        { key: normalizeStatus(record.homologationStatus), description: record.homologationDescription || "" }
+      ].filter(item => item.key !== "desconhecido");
+      const directStatus = directStatuses.reduce((current, item) =>
+        !current || statusConfig[item.key].severity > statusConfig[current.key].severity ? item : current, null);
       return {
         environment,
-        segment: segmentStatus ? inferredSegment : null,
-        key: segmentStatus?.key || environment?.statusKey || "desconhecido",
-        description: segmentStatus?.description || environment?.statusDescription || ""
+        segment: inferredSegment,
+        key: directStatus?.key || segmentStatus?.key || environment?.statusKey || "desconhecido",
+        description: directStatus?.description || segmentStatus?.description || environment?.statusDescription || ""
       };
     }
 
@@ -2209,65 +2217,52 @@
       restoreOverviewViewport();
     }
 
-    function parseCsvLine(line) {
-      const values = [];
-      let value = "";
-      let quoted = false;
-
-      for (let index = 0; index < line.length; index += 1) {
-        const character = line[index];
-
-        if (character === '"') {
-          if (quoted && line[index + 1] === '"') {
-            value += '"';
-            index += 1;
-          } else {
-            quoted = !quoted;
-          }
-        } else if (character === ";" && !quoted) {
-          values.push(value.trim());
-          value = "";
-        } else {
-          value += character;
-        }
-      }
-
-      values.push(value.trim());
-      return values;
-    }
-
-    async function loadClientData() {
-      if (clientDataCache) {
-        return clientDataCache;
-      }
-
-      const response = await fetch("./clientes.csv?v=20261001-1", { cache: "no-store" });
-
-      if (!response.ok) {
-        throw new Error("Não foi possível carregar clientes.csv");
-      }
-
-      const text = await response.text();
-      const lines = text
-        .replace(/^\uFEFF/, "")
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
-
-      if (!lines.length) {
-        return [];
-      }
-
-      const headers = parseCsvLine(lines.shift()).map(header => normalize(header));
-      clientDataCache = lines.map(line => {
-        const values = parseCsvLine(line);
-        return headers.reduce((record, header, index) => {
-          record[header] = values[index] || "";
-          return record;
-        }, {});
+    async function loadClientData(clientCode) {
+      const response = await fetch(CLIENT_ACCESS_API, {
+        method: "POST",
+        cache: "no-store",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ clientCode })
       });
 
-      return clientDataCache;
+      if (!response.ok) {
+        const error = new Error("HTTP " + response.status);
+        error.status = response.status;
+        throw error;
+      }
+
+      const payload = await response.json();
+      const grouped = new Map();
+      (Array.isArray(payload.accesses) ? payload.accesses : []).forEach(access => {
+        const environment = String(access.environment || "").trim();
+        const segment = String(access.segment || "").trim().toUpperCase();
+        const key = normalize(environment) + "|" + normalize(segment);
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            ambiente: environment,
+            segmento: segment,
+            producao: "",
+            homologacao: "",
+            productionStatus: "",
+            homologationStatus: "",
+            productionDescription: "",
+            homologationDescription: ""
+          });
+        }
+
+        const record = grouped.get(key);
+        if (access.scope === "producao") {
+          record.producao = access.url || "";
+          record.productionStatus = access.status || "";
+          record.productionDescription = access.statusText || "";
+        } else if (access.scope === "homologacao") {
+          record.homologacao = access.url || "";
+          record.homologationStatus = access.status || "";
+          record.homologationDescription = access.statusText || "";
+        }
+      });
+
+      return { found: payload.found === true, records: [...grouped.values()] };
     }
 
     function isSafeAccessUrl(value) {
@@ -2326,7 +2321,7 @@
       clientResults.innerHTML = "";
 
       if (!records.length) {
-        clientResults.innerHTML = '<div class="client-message">ID do cliente não encontrado.</div>';
+        clientResults.innerHTML = '<div class="client-message">Cliente encontrado, mas ainda sem ambiente e acesso mapeados.</div>';
         return;
       }
 
@@ -2340,10 +2335,6 @@
       orderedRecords.forEach(record => {
         const production = record.producao || record["produção"] || "";
         const homologation = record.homologacao || record["homologação"] || "";
-
-        if (!isSafeAccessUrl(production) && !isSafeAccessUrl(homologation)) {
-          return;
-        }
 
         const isCurrent = clientEnvironmentMatches(record.ambiente, activeEnvironment?.name || "");
         const monitoring = getClientRecordMonitoring(record);
@@ -2384,6 +2375,12 @@
         links.className = "access-links";
         appendAccessLink(links, "Produção", production);
         appendAccessLink(links, "Homologação", homologation);
+        if (!links.children.length) {
+          const missingUrl = document.createElement("div");
+          missingUrl.className = "client-message";
+          missingUrl.textContent = "URL de acesso ainda não cadastrada.";
+          links.appendChild(missingUrl);
+        }
         card.prepend(header);
         card.appendChild(links);
         clientResults.appendChild(card);
@@ -2398,7 +2395,7 @@
     function openClientOverview(requestedId, records) {
       const seenRecords = new Set();
       const uniqueRecords = records.filter(record => {
-        const key = [record.ambiente, record.producao || record["produção"], record.homologacao || record["homologação"]]
+        const key = [record.ambiente, record.segmento, record.producao || record["produção"], record.homologacao || record["homologação"]]
           .map(value => normalize(value || ""))
           .join("|");
         if (seenRecords.has(key)) return false;
@@ -2472,18 +2469,18 @@
       showLookupMessage("Localizando ambientes...");
 
       try {
-        const records = await loadClientData();
-        const matches = records.filter(record => String(record.id || "").trim() === requestedId);
-
-        if (!matches.length) {
-          showLookupMessage("ID não encontrado na base de testes.");
+        const result = await loadClientData(requestedId);
+        if (!result.found) {
+          showLookupMessage("ID não encontrado.");
           return;
         }
 
-        openClientOverview(requestedId, matches);
+        openClientOverview(requestedId, result.records);
       } catch (error) {
         console.error("Erro ao localizar ambientes do cliente.", error);
-        showLookupMessage("Não foi possível consultar os ambientes agora.");
+        showLookupMessage(error.status === 429
+          ? "Muitas consultas. Aguarde um minuto e tente novamente."
+          : "Não foi possível consultar os ambientes agora.");
       } finally {
         clientLookupButton.disabled = false;
         clientLookupButton.textContent = "Localizar";
@@ -2504,12 +2501,16 @@
       clientResults.innerHTML = '<div class="client-message">Consultando acessos do cliente...</div>';
 
       try {
-        const records = await loadClientData();
-        const matches = records.filter(record => String(record.id || "").trim() === requestedId);
-        renderClientAccesses(matches);
+        const result = await loadClientData(requestedId);
+        clientResults.innerHTML = result.found
+          ? ""
+          : '<div class="client-message">ID do cliente não encontrado.</div>';
+        if (result.found) renderClientAccesses(result.records);
       } catch (error) {
         console.error("Erro ao consultar URLs do cliente.", error);
-        clientResults.innerHTML = '<div class="client-message">Não foi possível carregar o arquivo <strong>clientes.csv</strong>. Verifique se ele está publicado junto desta página.</div>';
+        clientResults.innerHTML = error.status === 429
+          ? '<div class="client-message">Muitas consultas. Aguarde um minuto e tente novamente.</div>'
+          : '<div class="client-message">Não foi possível consultar os acessos agora.</div>';
       } finally {
         clientSearchButton.disabled = false;
         clientSearchButton.textContent = "Buscar acessos";
