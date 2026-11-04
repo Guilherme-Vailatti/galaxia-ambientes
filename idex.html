@@ -1696,6 +1696,32 @@
         .trim();
     }
 
+    function recordGroupName(record) {
+      return String(record?.grupo || record?.groupName || baseEnvironmentName(record?.ambiente)).trim();
+    }
+
+    function recordBelongsToEnvironment(record, environment) {
+      const group = normalize(recordGroupName(record));
+      const environmentName = normalize(environment?.name || environment);
+      return group
+        ? group === environmentName
+        : recordMatchesEnvironment(record?.ambiente, environment?.name || environment);
+    }
+
+    function recordSegmentName(record) {
+      const fullName = String(record?.ambiente || "")
+        .replace(/\s+-\s+(Produção|Homologação)$/i, "")
+        .replace(/\s+(Produção|Homologação)$/i, "")
+        .trim();
+      const group = recordGroupName(record);
+      if (!fullName || !group || normalize(fullName) === normalize(group)) return null;
+      if (normalize(fullName).startsWith(normalize(group))) {
+        const segment = fullName.slice(group.length).replace(/^\s*[-–—·:]?\s*/, "").trim();
+        return segment || null;
+      }
+      return null;
+    }
+
     function leastPopulatedOrbit() {
       const counts = orbitRadii.map((_, orbit) => environments.filter(environment => environment.orbit === orbit).length);
       return counts.indexOf(Math.min(...counts));
@@ -1741,7 +1767,7 @@
         try {
           const hostname = new URL(value).hostname.toLowerCase();
           const match = hostname.match(/-s(\d+)(?:\.|$)/);
-          if (match) return Number(match[1]);
+          if (match) return "S" + match[1];
         } catch {
           // A URL será validada separadamente ao renderizar o acesso.
         }
@@ -1752,16 +1778,11 @@
 
     function getSegmentStatus(environment, segment) {
       if (!environment || !segment || !statusRecordsCache.length) return null;
-      const environmentName = normalize(environment.name);
-      const prefix = environmentName + " s";
-      const hasSegmentedMonitoring = statusRecordsCache.some(record => normalize(record.ambiente).startsWith(prefix));
+      const hasSegmentedMonitoring = statusRecordsCache.some(record => recordBelongsToEnvironment(record, environment) && recordSegmentName(record));
       if (!hasSegmentedMonitoring) return null;
 
-      const segmentPrefix = environmentName + " s" + segment;
-      const matches = statusRecordsCache.filter(record => {
-        const recordName = normalize(record.ambiente);
-        return recordName === segmentPrefix || recordName.startsWith(segmentPrefix + " ") || recordName.startsWith(segmentPrefix + " -");
-      });
+      const matches = statusRecordsCache.filter(record => recordBelongsToEnvironment(record, environment)
+        && normalize(recordSegmentName(record)) === normalize(segment));
       if (!matches.length) return { key: "desconhecido", description: "", segment };
 
       const key = matches.reduce((current, record) => {
@@ -1774,7 +1795,7 @@
 
     function getClientRecordMonitoring(record) {
       const environment = environments.find(item => recordMatchesEnvironment(record.ambiente, item.name));
-      const explicitSegment = Number(String(record.segmento || "").replace(/\D/g, "")) || null;
+      const explicitSegment = String(record.segmento || "").trim().toUpperCase() || null;
       const inferredSegment = explicitSegment || identifySegment(record);
       const segmentStatus = getSegmentStatus(environment, inferredSegment);
       const directStatuses = [
@@ -1792,18 +1813,16 @@
     }
 
     function getSegmentIncidents(environment) {
-      const environmentPrefix = normalize(environment.name) + " s";
       const grouped = new Map();
 
       statusRecordsCache.forEach(record => {
-        const recordName = normalize(record.ambiente);
-        if (!recordName.startsWith(environmentPrefix)) return;
+        if (!recordBelongsToEnvironment(record, environment)) return;
         const key = normalizeStatus(record.status);
         if (key !== "instabilidade" && key !== "indisponibilidade") return;
 
-        const segmentMatch = recordName.match(/\bs(\d+)\b/);
-        if (!segmentMatch) return;
-        const segment = Number(segmentMatch[1]);
+        const segment = recordSegmentName(record);
+        if (!segment) return;
+        const recordName = normalize(record.ambiente);
         const scope = recordName.includes("homolog") ? "HML" : recordName.includes("produc") ? "PRD" : "";
         const current = grouped.get(segment) || { segment, scopes: new Set(), key };
         if (scope) current.scopes.add(scope);
@@ -1811,21 +1830,17 @@
         grouped.set(segment, current);
       });
 
-      return [...grouped.values()].sort((first, second) => first.segment - second.segment);
+      return [...grouped.values()].sort((first, second) => first.segment.localeCompare(second.segment, "pt-BR", { numeric: true }));
     }
 
     function renderEnvironmentSegmentStatus(environment) {
-      const environmentPrefix = normalize(environment.name) + " s";
       const grouped = new Map();
 
       statusRecordsCache.forEach(record => {
         const recordName = normalize(record.ambiente || "");
-        if (!recordName.startsWith(environmentPrefix)) return;
-
-        const segmentMatch = recordName.match(/\bs(\d+)\b/);
-        if (!segmentMatch) return;
-
-        const segment = Number(segmentMatch[1]);
+        if (!recordBelongsToEnvironment(record, environment)) return;
+        const segment = recordSegmentName(record);
+        if (!segment) return;
         const scope = recordName.includes("homolog")
           ? "Homologação"
           : recordName.includes("produc")
@@ -1844,7 +1859,7 @@
         return { hasSegments: false, key: environment.statusKey || "desconhecido", partial: false, affectedSegments: [] };
       }
 
-      const groups = [...grouped.values()].sort((first, second) => first.segment - second.segment);
+      const groups = [...grouped.values()].sort((first, second) => first.segment.localeCompare(second.segment, "pt-BR", { numeric: true }));
       let worstKey = "desconhecido";
       let hasOperational = false;
       let hasIncident = false;
@@ -1931,7 +1946,7 @@
           : current, "desconhecido");
         const labels = incidents.map(incident => {
           const scopes = ["PRD", "HML"].filter(scope => incident.scopes.has(scope));
-          return "S" + incident.segment + (scopes.length ? " · " + scopes.join("/") : "");
+          return incident.segment + (scopes.length ? " · " + scopes.join("/") : "");
         });
         badge.hidden = false;
         badge.textContent = labels.length <= 2 ? labels.join("  ") : incidents.length + " ocorrências";
