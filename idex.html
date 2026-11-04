@@ -1747,7 +1747,7 @@
         }
       }
 
-      return urls.length ? 1 : null;
+      return null;
     }
 
     function getSegmentStatus(environment, segment) {
@@ -1863,17 +1863,25 @@
         header.className = "segment-card-header";
         const title = document.createElement("span");
         title.textContent = "Segmento " + group.segment;
-        const overall = document.createElement("span");
-        overall.className = "segment-overall";
-        overall.textContent = statusConfig[groupKey].label;
-        header.append(title, overall);
+        header.appendChild(title);
         card.appendChild(header);
 
-        group.records
+        const orderedRecords = group.records
           .sort((first, second) => {
             const order = { "Produção": 0, "Homologação": 1, "Geral": 2 };
             return order[first.scope] - order[second.scope];
-          })
+          });
+        const visibleRecords = orderedRecords.length === 2
+          && orderedRecords[0].key === orderedRecords[1].key
+          && orderedRecords[0].description === orderedRecords[1].description
+          ? [{
+              scope: "Produção e Homologação",
+              key: orderedRecords[0].key,
+              description: orderedRecords[0].description
+            }]
+          : orderedRecords;
+
+        visibleRecords
           .forEach(record => {
             if (record.key === "operacional") hasOperational = true;
             if (record.key === "instabilidade" || record.key === "indisponibilidade") hasIncident = true;
