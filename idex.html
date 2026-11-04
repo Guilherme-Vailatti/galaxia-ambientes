@@ -1705,8 +1705,8 @@
       { name: "Mizar", orbit: 2, url: "#", description: "Portal de acesso ao ambiente Mizar." }
     ];
 
-    const STATUS_API_DEFAULT = "https://diario-dev.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
-    const CLIENT_ACCESS_API_DEFAULT = "https://diario-dev.seniorcloud.com.br/api/portal-status-cloud/client-access";
+    const STATUS_API_DEFAULT = "https://diario.seniorcloud.com.br/api/portal-status-cloud/status-ambiente/external";
+    const CLIENT_ACCESS_API_DEFAULT = "https://diario.seniorcloud.com.br/api/portal-status-cloud/client-access";
     const STATUS_API = new URLSearchParams(window.location.search).get("statusApi") || STATUS_API_DEFAULT;
     const CLIENT_ACCESS_API = new URLSearchParams(window.location.search).get("clientAccessApi") || CLIENT_ACCESS_API_DEFAULT;
     const statusConfig = {
