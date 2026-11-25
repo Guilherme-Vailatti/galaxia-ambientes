@@ -2417,18 +2417,73 @@
     }
 
     async function loadClientData(clientCode) {
-      const response = await fetch(CLIENT_ACCESS_API, {
-        method: "POST",
-        cache: "no-store",
-        headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ clientCode })
-      });
+  const response = await fetch(CLIENT_ACCESS_API, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ clientCode })
+  });
 
-      if (!response.ok) {
-        const error = new Error("HTTP " + response.status);
-        error.status = response.status;
-        throw error;
-      }
+  if (!response.ok) {
+    const error = new Error("HTTP " + response.status);
+    error.status = response.status;
+    throw error;
+  }
+
+  const payload = await response.json();
+  const grouped = new Map();
+
+  (Array.isArray(payload.accesses) ? payload.accesses : []).forEach(access => {
+    const environment = String(access.environment || "").trim();
+    const segment = String(access.segment || "").trim().toUpperCase();
+    const key = normalize(environment) + "|" + normalize(segment);
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        ambiente: environment,
+        segmento: segment,
+        producao: "",
+        homologacao: "",
+        productionStatus: "",
+        homologationStatus: "",
+        productionDescription: "",
+        homologationDescription: "",
+        productionAccessMessage: "",
+        homologationAccessMessage: "",
+        productionSupportUrl: "",
+        homologationSupportUrl: ""
+      });
+    }
+
+    const record = grouped.get(key);
+    const hasPublicUrl =
+      access.hasPublicUrl === true &&
+      typeof access.url === "string" &&
+      access.url.trim() !== "";
+
+    if (access.scope === "producao") {
+      record.producao = hasPublicUrl ? access.url.trim() : "";
+      record.productionStatus = access.status || "";
+      record.productionDescription = access.statusText || "";
+      record.productionAccessMessage = access.accessMessage || "";
+      record.productionSupportUrl = access.supportUrl || "";
+    } else if (access.scope === "homologacao") {
+      record.homologacao = hasPublicUrl ? access.url.trim() : "";
+      record.homologationStatus = access.status || "";
+      record.homologationDescription = access.statusText || "";
+      record.homologationAccessMessage = access.accessMessage || "";
+      record.homologationSupportUrl = access.supportUrl || "";
+    }
+  });
+
+  return {
+    found: payload.found === true,
+    records: [...grouped.values()]
+  };
+}
 
       const payload = await response.json();
       const grouped = new Map();
@@ -2517,79 +2572,194 @@
     }
 
     function renderClientAccesses(records) {
-      clientResults.innerHTML = "";
+  clientResults.innerHTML = "";
 
-      if (!records.length) {
-        clientResults.innerHTML = '<div class="client-message">Cliente encontrado, mas ainda sem ambiente e acesso mapeados.</div>';
+  if (!records.length) {
+    clientResults.innerHTML =
+      '<div class="client-message">Cliente encontrado, mas ainda sem ambiente e acesso mapeados.</div>';
+    return;
+  }
+
+  const orderedRecords = [...records].sort((first, second) => {
+    const firstMatches = clientEnvironmentMatches(
+      first.ambiente,
+      activeEnvironment?.name || ""
+    );
+    const secondMatches = clientEnvironmentMatches(
+      second.ambiente,
+      activeEnvironment?.name || ""
+    );
+
+    return Number(secondMatches) - Number(firstMatches);
+  });
+
+  let renderedCards = 0;
+
+  orderedRecords.forEach(record => {
+    const production =
+      record.producao || record["produção"] || "";
+
+    const homologation =
+      record.homologacao || record["homologação"] || "";
+
+    const isCurrent = clientEnvironmentMatches(
+      record.ambiente,
+      activeEnvironment?.name || ""
+    );
+
+    const monitoring = getClientRecordMonitoring(record);
+    const mappedStatus = statusConfig[monitoring.key];
+
+    const card = document.createElement("article");
+    card.className = "access-card" + (isCurrent ? " is-current" : "");
+
+    const header = document.createElement("div");
+    header.className = "access-card-header";
+
+    const title = document.createElement("strong");
+    title.className = "access-card-title";
+    title.textContent =
+      (record.ambiente || "Ambiente") +
+      (monitoring.segment
+        ? " · Segmento " + monitoring.segment
+        : "");
+
+    header.appendChild(title);
+
+    if (isCurrent) {
+      const badge = document.createElement("span");
+      badge.className = "access-card-badge";
+      badge.textContent = "Ambiente selecionado";
+      header.appendChild(badge);
+    } else if (!activeEnvironment) {
+      const badge = document.createElement("span");
+      badge.className = "access-card-badge";
+      badge.style.setProperty("--badge-color", mappedStatus.color);
+      badge.textContent = mappedStatus.label;
+      header.appendChild(badge);
+    }
+
+    card.appendChild(header);
+
+    if (!activeEnvironment && monitoring.description) {
+      const statusDescription = document.createElement("p");
+      statusDescription.className =
+        "access-card-status-description";
+      statusDescription.textContent = monitoring.description;
+      card.appendChild(statusDescription);
+    }
+
+    const accessContent = document.createElement("div");
+    accessContent.className = "access-links";
+
+    appendAccessLink(
+      accessContent,
+      "Produção",
+      production
+    );
+
+    appendAccessLink(
+      accessContent,
+      "Homologação",
+      homologation
+    );
+
+    const instructions = [
+      {
+        scope: "Produção",
+        message: record.productionAccessMessage || "",
+        supportUrl: record.productionSupportUrl || ""
+      },
+      {
+        scope: "Homologação",
+        message: record.homologationAccessMessage || "",
+        supportUrl: record.homologationSupportUrl || ""
+      }
+    ];
+
+    const renderedInstructions = new Set();
+
+    instructions.forEach(instruction => {
+      const message = String(instruction.message || "").trim();
+      const supportUrl = String(instruction.supportUrl || "").trim();
+
+      if (!message) {
         return;
       }
 
-      const orderedRecords = [...records].sort((first, second) => {
-        const firstMatches = clientEnvironmentMatches(first.ambiente, activeEnvironment?.name || "");
-        const secondMatches = clientEnvironmentMatches(second.ambiente, activeEnvironment?.name || "");
-        return Number(secondMatches) - Number(firstMatches);
-      });
-      let renderedCards = 0;
+      /*
+       * Evita repetir a mesma orientação quando Produção e
+       * Homologação utilizam a mesma URL exclusiva.
+       */
+      const instructionKey =
+        normalize(message) + "|" + normalize(supportUrl);
 
-      orderedRecords.forEach(record => {
-        const production = record.producao || record["produção"] || "";
-        const homologation = record.homologacao || record["homologação"] || "";
-
-        const isCurrent = clientEnvironmentMatches(record.ambiente, activeEnvironment?.name || "");
-        const monitoring = getClientRecordMonitoring(record);
-        const mappedEnvironment = monitoring.environment;
-        const mappedStatus = statusConfig[monitoring.key];
-        const card = document.createElement("article");
-        card.className = "access-card" + (isCurrent ? " is-current" : "");
-
-        const header = document.createElement("div");
-        header.className = "access-card-header";
-
-        const title = document.createElement("strong");
-        title.className = "access-card-title";
-        title.textContent = (record.ambiente || "Ambiente") + (monitoring.segment ? " · Segmento " + monitoring.segment : "");
-        header.appendChild(title);
-
-        if (isCurrent) {
-          const badge = document.createElement("span");
-          badge.className = "access-card-badge";
-          badge.textContent = "Ambiente selecionado";
-          header.appendChild(badge);
-        } else if (!activeEnvironment) {
-          const badge = document.createElement("span");
-          badge.className = "access-card-badge";
-          badge.style.setProperty("--badge-color", mappedStatus.color);
-          badge.textContent = mappedStatus.label;
-          header.appendChild(badge);
-        }
-
-        if (!activeEnvironment && monitoring.description) {
-          const statusDescription = document.createElement("p");
-          statusDescription.className = "access-card-status-description";
-          statusDescription.textContent = monitoring.description;
-          card.appendChild(statusDescription);
-        }
-
-        const links = document.createElement("div");
-        links.className = "access-links";
-        appendAccessLink(links, "Produção", production);
-        appendAccessLink(links, "Homologação", homologation);
-        if (!links.children.length) {
-          const missingUrl = document.createElement("div");
-          missingUrl.className = "client-message";
-          missingUrl.textContent = "URL de acesso ainda não cadastrada.";
-          links.appendChild(missingUrl);
-        }
-        card.prepend(header);
-        card.appendChild(links);
-        clientResults.appendChild(card);
-        renderedCards += 1;
-      });
-
-      if (!renderedCards) {
-        clientResults.innerHTML = '<div class="client-message">O cliente foi encontrado, mas não possui URLs válidas cadastradas.</div>';
+      if (renderedInstructions.has(instructionKey)) {
+        return;
       }
+
+      renderedInstructions.add(instructionKey);
+
+      const messageBox = document.createElement("div");
+      messageBox.className = "client-message";
+
+      /*
+       * Remove o texto final para substituí-lo por um link
+       * clicável e seguro.
+       */
+      const messageWithoutSupportLink = message.replace(
+        /\s*Suporte Senior\.?\s*$/i,
+        ""
+      );
+
+      const messageText = document.createElement("span");
+      messageText.textContent = messageWithoutSupportLink;
+
+      messageBox.appendChild(messageText);
+
+      if (isSafeAccessUrl(supportUrl)) {
+        if (
+          messageWithoutSupportLink &&
+          !/\s$/.test(messageWithoutSupportLink)
+        ) {
+          messageBox.appendChild(document.createTextNode(" "));
+        }
+
+        const supportLink = document.createElement("a");
+        supportLink.href = supportUrl;
+        supportLink.target = "_blank";
+        supportLink.rel = "noopener noreferrer";
+        supportLink.textContent = "Suporte Senior.";
+
+        messageBox.appendChild(supportLink);
+      }
+
+      accessContent.appendChild(messageBox);
+    });
+
+    /*
+     * Compatibilidade com respostas antigas da API, que ainda
+     * não possuam accessMessage e supportUrl.
+     */
+    if (!accessContent.children.length) {
+      const missingUrl = document.createElement("div");
+      missingUrl.className = "client-message";
+      missingUrl.textContent =
+        "URL de acesso ainda não cadastrada.";
+
+      accessContent.appendChild(missingUrl);
     }
+
+    card.appendChild(accessContent);
+    clientResults.appendChild(card);
+    renderedCards += 1;
+  });
+
+  if (!renderedCards) {
+    clientResults.innerHTML =
+      '<div class="client-message">O cliente foi encontrado, mas ainda não possui ambientes mapeados.</div>';
+  }
+}
 
     function openClientOverview(requestedId, records) {
       const seenRecords = new Set();
