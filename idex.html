@@ -2485,40 +2485,6 @@
   };
 }
 
-      const payload = await response.json();
-      const grouped = new Map();
-      (Array.isArray(payload.accesses) ? payload.accesses : []).forEach(access => {
-        const environment = String(access.environment || "").trim();
-        const segment = String(access.segment || "").trim().toUpperCase();
-        const key = normalize(environment) + "|" + normalize(segment);
-        if (!grouped.has(key)) {
-          grouped.set(key, {
-            ambiente: environment,
-            segmento: segment,
-            producao: "",
-            homologacao: "",
-            productionStatus: "",
-            homologationStatus: "",
-            productionDescription: "",
-            homologationDescription: ""
-          });
-        }
-
-        const record = grouped.get(key);
-        if (access.scope === "producao") {
-          record.producao = access.url || "";
-          record.productionStatus = access.status || "";
-          record.productionDescription = access.statusText || "";
-        } else if (access.scope === "homologacao") {
-          record.homologacao = access.url || "";
-          record.homologationStatus = access.status || "";
-          record.homologationDescription = access.statusText || "";
-        }
-      });
-
-      return { found: payload.found === true, records: [...grouped.values()] };
-    }
-
     function isSafeAccessUrl(value) {
       try {
         const url = new URL(value);
@@ -2571,10 +2537,10 @@
       container.appendChild(link);
     }
 
-    function renderClientAccesses(records) {
-  clientResults.innerHTML = "";
+  function renderClientAccesses(records) {
+    clientResults.innerHTML = "";
 
-  if (!records.length) {
+    if (!records.length) {
     clientResults.innerHTML =
       '<div class="client-message">Cliente encontrado, mas ainda sem ambiente e acesso mapeados.</div>';
     return;
